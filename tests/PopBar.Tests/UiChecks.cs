@@ -114,9 +114,21 @@ internal static class UiChecks
         }
         Check(ThemeManager.Resolve((AppTheme)99,true)==AppTheme.Light && ThemeManager.Resolve((AppTheme)99,false)==AppTheme.Dark,"unknown numeric theme safely follows system");
 
+        void PumpFor(int milliseconds)
+        {
+            var frame=new System.Windows.Threading.DispatcherFrame();
+            var timer=new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background,app.Dispatcher) { Interval=TimeSpan.FromMilliseconds(milliseconds) };
+            timer.Tick+=(_,_)=> { timer.Stop(); frame.Continue=false; };
+            timer.Start();
+            System.Windows.Threading.Dispatcher.PushFrame(frame);
+        }
+        var toolbarCursor=System.Windows.Forms.Cursor.Position;
         var toolbar=new ToolbarWindow();
         try {
+            System.Windows.Forms.Cursor.Position=new System.Drawing.Point(0,0);
             toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings(),()=>{},_=>{},_=>{});
+            var toolbarSurface=(Border)toolbar.Content;
+            Check(toolbarSurface.Name=="ToolbarSurface" && Math.Abs(toolbarSurface.Opacity-ToolbarWindow.IdleOpacity)<0.001,"toolbar starts semi-transparent");
             var panel=Descendants<WrapPanel>(toolbar).Single();
             var buttons=panel.Children.OfType<Button>().ToList();
             var names=new[] { "复制","搜索","翻译","解释","润色","设置" };
@@ -126,11 +138,21 @@ internal static class UiChecks
             Check(panel.Children.OfType<Border>().Any(border=>border.Width==1),"toolbar visual group separators");
             Check(!buttons.Any(button=>new[]{"剪切","粘贴","替换原文"}.Contains(button.ToolTip as string)),"read-only selection hides edit actions");
             Capture(toolbar,"toolbar");
+            toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent });
+            PumpFor(250);
+            Check(Math.Abs(toolbarSurface.Opacity-1)<0.001,"toolbar hover becomes opaque");
             toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings { Prompts=new(){emojiPrompt} },()=>{},_=>{},_=>{});
+            Check(!toolbarSurface.HasAnimatedProperties && Math.Abs(toolbarSurface.Opacity-ToolbarWindow.IdleOpacity)<0.001,"toolbar presentation resets idle opacity");
             var custom=Descendants<Button>(toolbar).Single(item=>AutomationProperties.GetName(item)=="自定义");
             Check(custom.Content is Viewbox box && box.Child is TextBlock text && text.Text=="👩‍💻" && !custom.Focusable,"toolbar renders custom emoji without focus");
+            toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent });
+            PumpFor(250);
+            Check(Math.Abs(toolbarSurface.Opacity-1)<0.001,"toolbar hover becomes opaque after present");
+            toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseLeaveEvent });
+            PumpFor(250);
+            Check(Math.Abs(toolbarSurface.Opacity-ToolbarWindow.IdleOpacity)<0.001,"toolbar leave returns to idle opacity");
             Capture(toolbar,"toolbar-emoji");
-        } finally { toolbar.Close(); }
+        } finally { toolbar.Close(); System.Windows.Forms.Cursor.Position=toolbarCursor; }
 
         var selectionBox=new TextBox { Text="Hello selection" };
         var origin=new Window { Title="PopBar activation test source",Width=320,Height=160,Content=selectionBox };

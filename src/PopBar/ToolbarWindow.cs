@@ -1,9 +1,12 @@
 using System.Windows.Interop;
+using System.Windows.Media.Animation;
 
 namespace PopBar;
 
 internal sealed class ToolbarWindow:Window
 {
+    internal const double IdleOpacity=0.35;
+    readonly Border surface;
     readonly WrapPanel buttons=new();
     internal nint Handle => new WindowInteropHelper(this).Handle;
     protected override void OnSourceInitialized(EventArgs e)
@@ -19,13 +22,21 @@ internal sealed class ToolbarWindow:Window
         Title="PopBar · 划词工具条"; WindowStyle=WindowStyle.None; ResizeMode=ResizeMode.NoResize;
         ShowInTaskbar=false; ShowActivated=false; Topmost=true; SizeToContent=SizeToContent.WidthAndHeight;
         AllowsTransparency=true; Background=Brushes.Transparent; Ui.Style(this); Background=Brushes.Transparent;
-        var surface=new Border { CornerRadius=new CornerRadius(8),BorderThickness=new Thickness(1),Padding=new Thickness(3),Margin=new Thickness(6),Child=buttons,Effect=new System.Windows.Media.Effects.DropShadowEffect { BlurRadius=12,ShadowDepth=2,Opacity=0.25,Direction=270,Color=Colors.Black } };
+        surface=new Border { CornerRadius=new CornerRadius(8),BorderThickness=new Thickness(1),Padding=new Thickness(3),Margin=new Thickness(6),Child=buttons,Effect=new System.Windows.Media.Effects.DropShadowEffect { BlurRadius=12,ShadowDepth=2,Opacity=0.25,Direction=270,Color=Colors.Black } };
+        surface.Name="ToolbarSurface"; surface.Opacity=IdleOpacity;
+        surface.MouseEnter+=(_,_)=>Fade(1);
+        surface.MouseLeave+=(_,_)=>Fade(IdleOpacity);
         surface.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush");
         surface.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
         Content=surface;
     }
+    void Fade(double target)
+    {
+        surface.BeginAnimation(UIElement.OpacityProperty,new DoubleAnimation(target,TimeSpan.FromMilliseconds(120)) { EasingFunction=new QuadraticEase { EasingMode=EasingMode.EaseOut } });
+    }
     internal void Present(Selection selection,Native.Point point,Settings settings,Action configure,Action<PromptAction> ai,Action<string> notify)
     {
+        surface.BeginAnimation(UIElement.OpacityProperty,null); surface.Opacity=IdleOpacity;
         buttons.Children.Clear();
         void Separator() {
             if(buttons.Children.Count==0 || buttons.Children[^1] is Border) return;
