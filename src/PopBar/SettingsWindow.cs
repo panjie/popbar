@@ -53,7 +53,7 @@ internal sealed class SettingsWindow:Window
             var heading=new StackPanel { Margin=new Thickness(0,0,0,20) }; DockPanel.SetDock(heading,Dock.Top); dock.Children.Add(heading);
             heading.Children.Add(Text(title,24,false,FontWeights.SemiBold));
             var summary=Text(description,12,true); summary.Margin=new Thickness(0,6,0,0); heading.Children.Add(summary);
-            var content=new StackPanel();
+            var content=new StackPanel { Margin=new Thickness(0,0,10,0) };
             dock.Children.Add(new ScrollViewer { Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled });
             pages.Children.Add(page); return (page,content);
         }
@@ -86,7 +86,21 @@ internal sealed class SettingsWindow:Window
         aiNav.Click+=(_,_)=>ShowPage(aiPage,aiNav);
         promptsNav.Click+=(_,_)=>ShowPage(promptsPage,promptsNav);
 
-        var appearanceSection=Section(general,"外观"); appearanceSection.Margin=new Thickness(0,0,0,4);
+        var startupSection=Section(general,"启动"); startupSection.Margin=new Thickness(0,0,0,4);
+        var startupRegistration=new StartupRegistration();
+        var launchAtLogin=new CheckBox { Name="LaunchAtLogin",Content="登录 Windows 时启动 PopBar" };
+        bool startupWasEnabled=false;
+        try {
+            startupWasEnabled=startupRegistration.IsEnabled();
+            launchAtLogin.IsChecked=startupWasEnabled;
+        } catch(Exception ex) when(ex is System.Security.SecurityException or UnauthorizedAccessException or IOException) {
+            launchAtLogin.IsEnabled=false;
+            launchAtLogin.ToolTip="无法读取 Windows 登录启动设置。";
+            ToolTipService.SetShowOnDisabled(launchAtLogin,true);
+        }
+        general.Children.Add(launchAtLogin);
+
+        Section(general,"外观");
         FieldLabel(general,"主题");
         var theme=new ComboBox { Name="ThemeSelector" }; theme.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
         foreach(var item in new[]{ (AppTheme.System,"跟随系统"),(AppTheme.Light,"亮色"),(AppTheme.Dark,"暗色") }) {
@@ -106,6 +120,68 @@ internal sealed class SettingsWindow:Window
         var positionHelp=Text("相对于划词结束时的鼠标位置；靠近屏幕边缘时自动避让。",12,true); positionHelp.Margin=new Thickness(0,6,0,6); general.Children.Add(positionHelp);
         var enabled=new CheckBox { Content="鼠标划词后自动弹出",IsChecked=settings.Enabled }; general.Children.Add(enabled);
         var terminal=new CheckBox { Content="终端中仅在按住 Shift 划词时弹出",IsChecked=settings.TerminalShift }; general.Children.Add(terminal);
+        Section(general,"AI 结果窗口");
+        var autoCloseResult=new CheckBox {
+            Name="AutoCloseResultOnDeactivate",
+            Content="失去焦点 5 秒后自动关闭",
+            IsChecked=settings.AutoCloseResultOnDeactivate
+        };
+        var typography=new Grid();
+        typography.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(1,GridUnitType.Star) });
+        typography.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(108) });
+        general.Children.Add(typography);
+        var fontField=new StackPanel { Margin=new Thickness(0,0,12,0) };
+        typography.Children.Add(fontField);
+        var sizeField=new StackPanel();
+        Grid.SetColumn(sizeField,1);
+        typography.Children.Add(sizeField);
+
+        var chineseLanguage=System.Windows.Markup.XmlLanguage.GetLanguage("zh-CN");
+        var fontOptions=Fonts.SystemFontFamilies
+            .Select(font=>new KeyValuePair<string,string>(font.Source,font.FamilyNames.TryGetValue(chineseLanguage,out var name)?name:font.Source))
+            .OrderBy(option=>option.Value,StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        fontOptions.Insert(0,new("","默认字体"));
+        var savedFont=settings.ResultFontFamily??"";
+        var selectedFont=fontOptions.FindIndex(option=>string.Equals(option.Key,savedFont,StringComparison.OrdinalIgnoreCase));
+        if(selectedFont<0) {
+            selectedFont=1;
+            fontOptions.Insert(selectedFont,new(savedFont,$"{savedFont}（未安装）"));
+        }
+
+        var fontLabel=FieldLabel(fontField,"字体");
+        var resultFont=new ComboBox {
+            Name="ResultFontSelector",ItemsSource=fontOptions,DisplayMemberPath="Value",SelectedValuePath="Key",
+            SelectedIndex=selectedFont,MaxDropDownHeight=300
+        };
+        resultFont.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(resultFont,fontLabel);
+        fontField.Children.Add(resultFont);
+
+        var sizeLabel=FieldLabel(sizeField,"字号");
+        var resultSize=new ComboBox {
+            Name="ResultFontSizeSelector",MaxDropDownHeight=300,
+            ItemsSource=Enumerable.Range(ResultTypography.MinSize,ResultTypography.MaxSize-ResultTypography.MinSize+1),
+            SelectedItem=ResultTypography.NormalizeSize(settings.ResultFontSize)
+        };
+        resultSize.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(resultSize,sizeLabel);
+        sizeField.Children.Add(resultSize);
+
+        var fontPreview=Text("字体预览 · 日本語 · PopBar");
+        fontPreview.Margin=new Thickness(0,8,0,0);
+        general.Children.Add(fontPreview);
+        int SelectedResultSize()=>resultSize.SelectedItem is int size?size:ResultTypography.DefaultSize;
+        void UpdateFontPreview()
+        {
+            fontPreview.FontFamily=ResultTypography.ResolveFont(resultFont.SelectedValue as string);
+            fontPreview.FontSize=SelectedResultSize();
+        }
+        resultFont.SelectionChanged+=(_,_)=>UpdateFontPreview();
+        resultSize.SelectionChanged+=(_,_)=>UpdateFontPreview();
+        UpdateFontPreview();
+        general.Children.Add(autoCloseResult);
+
         Section(general,"搜索与排除");
         var search=Field(general,"搜索地址",settings.SearchUrl,"使用 {text} 代表选中文字，例如 https://www.bing.com/search?q={text}");
         var excluded=Field(general,"排除的应用进程名",settings.ExcludedApps,"使用逗号分隔，不包含 .exe。密码管理器默认已排除。");
@@ -117,11 +193,29 @@ internal sealed class SettingsWindow:Window
         var endpointSection=Section(ai,"接口配置"); endpointSection.Margin=new Thickness(0,0,0,4);
         var url=Field(ai,"API 基础地址",settings.BaseUrl,"例如 https://api.deepseek.com/v1，无需添加 /chat/completions。远程服务必须使用 HTTPS。");
         var model=Field(ai,"模型 ID",settings.Model,"填写服务商或本地服务提供的实际模型名称。");
+        var thinking=new CheckBox {
+            Name="DeepSeekFlashThinking",Content="启用 DeepSeek Flash 思考模式",IsChecked=settings.DeepSeekFlashThinking,
+            Margin=new Thickness(0,8,0,0),ToolTip="关闭时通常更快显示正文。"
+        };
+        ai.Children.Add(thinking);
+        void UpdateThinkingOption()=>thinking.Visibility=AiClient.IsOfficialDeepSeekFlash(url.Text,model.Text)?Visibility.Visible:Visibility.Collapsed;
+        url.TextChanged+=(_,_)=>UpdateThinkingOption();
+        model.TextChanged+=(_,_)=>UpdateThinkingOption();
+        UpdateThinkingOption();
         Section(ai,"身份验证");
         FieldLabel(ai,"API Key");
-        var secret=new PasswordBox(); secret.SetResourceReference(FrameworkElement.StyleProperty,"InputPasswordBoxStyle"); ai.Children.Add(secret);
+        var secretHost=new Grid(); ai.Children.Add(secretHost);
+        var secret=new PasswordBox { Name="ApiKeyInput" }; secret.SetResourceReference(FrameworkElement.StyleProperty,"InputPasswordBoxStyle"); secretHost.Children.Add(secret);
+        // Display a status overlay, never a fake password that could be saved as a key.
+        var savedKeyMask=Text("●●●●●●●●",12,true); savedKeyMask.Name="SavedApiKeyMask";
+        savedKeyMask.Margin=new Thickness(11,0,0,0); savedKeyMask.VerticalAlignment=VerticalAlignment.Center; savedKeyMask.IsHitTestVisible=false;
+        secretHost.Children.Add(savedKeyMask);
         var secretHelp=Text("留空保留已有密钥；密钥使用 Windows DPAPI 当前用户加密存储。",12,true); secretHelp.Margin=new Thickness(0,6,0,0); ai.Children.Add(secretHelp);
-        var clear=new CheckBox { Content="清除已保存密钥（适用于无需密钥的本地服务）",Margin=new Thickness(0,10,0,0) }; ai.Children.Add(clear);
+        var clear=new CheckBox { Name="ClearSavedApiKey",Content="清除已保存密钥（适用于无需密钥的本地服务）",Margin=new Thickness(0,10,0,0) }; ai.Children.Add(clear);
+        void UpdateKeyMask()=>savedKeyMask.Visibility=!string.IsNullOrEmpty(settings.EncryptedKey) && clear.IsChecked!=true && secret.Password.Length==0?Visibility.Visible:Visibility.Collapsed;
+        secret.PasswordChanged+=(_,_)=>UpdateKeyMask();
+        clear.Checked+=(_,_)=>UpdateKeyMask(); clear.Unchecked+=(_,_)=>UpdateKeyMask();
+        UpdateKeyMask();
         var privacy=Text("只有点击 AI 按钮时才会发送选中文字。当前支持 OpenAI 兼容 Chat Completions 协议。",12,true); privacy.Margin=new Thickness(0,22,0,4); ai.Children.Add(privacy);
 
         var promptRows=new Grid();
@@ -135,8 +229,11 @@ internal sealed class SettingsWindow:Window
         editorGrid.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(190) });
         editorGrid.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(1,GridUnitType.Star) });
         var listPanel=new DockPanel { Margin=new Thickness(0,0,16,0) }; editorGrid.Children.Add(listPanel);
-        var drafts=settings.Prompts.Select(item=>item.Copy()).ToList();
-        var promptList=new ListBox { Name="PromptList",ItemsSource=drafts,DisplayMemberPath="Name",BorderThickness=new Thickness(1),Padding=new Thickness(4) };
+        var drafts=new System.Collections.ObjectModel.ObservableCollection<PromptAction>(settings.Prompts.Select(item=>item.Copy()));
+        foreach(var draft in drafts.Where(item=>item.IconKind==PromptIconKind.NerdFont && !string.IsNullOrWhiteSpace(item.IconFont) && !PromptIcons.IsNerdFontFamily(item.IconFont)))
+            draft.IconFont="";
+        var promptList=new PromptOrderList(drafts) { Name="PromptList",BorderThickness=new Thickness(1),Padding=new Thickness(4) };
+        promptList.SetResourceReference(ItemsControl.ItemTemplateProperty,"PromptOrderItemTemplate");
         promptList.SetResourceReference(ListBox.BackgroundProperty,"SurfaceBrush");
         promptList.SetResourceReference(ListBox.ForegroundProperty,"TextBrush");
         promptList.SetResourceReference(ListBox.BorderBrushProperty,"BorderBrush");
@@ -158,27 +255,48 @@ internal sealed class SettingsWindow:Window
         iconKind.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
         foreach(var option in new[]{(PromptIconKind.Default,"默认图标"),(PromptIconKind.Emoji,"Emoji"),(PromptIconKind.NerdFont,"Nerd Font")})
             iconKind.Items.Add(new ComboBoxItem { Content=option.Item2,Tag=option.Item1 });
-        promptEditor.Children.Add(iconKind);
+        var iconHeader=new DockPanel { LastChildFill=true };
+        promptEditor.Children.Add(iconHeader);
+        var preview=new ContentControl { Name="PromptIconPreview",Width=40,Height=36,Margin=new Thickness(0,0,10,0),ToolTip="工具栏实际显示效果" };
+        DockPanel.SetDock(preview,Dock.Left); iconHeader.Children.Add(preview);
+        iconHeader.Children.Add(iconKind);
         var iconOptions=new StackPanel(); promptEditor.Children.Add(iconOptions);
-        var iconInput=Field(iconOptions,"图标字符或码点","","Emoji 可用 Win + . 输入；Nerd Font 可粘贴字符或输入 U+F121。"); iconInput.Name="PromptIconInput";
-        var fontPanel=new StackPanel(); iconOptions.Children.Add(fontPanel);
-        FieldLabel(fontPanel,"已安装的 Nerd Font");
+        var iconEntry=new DockPanel { Margin=new Thickness(0,8,0,0),LastChildFill=true }; iconOptions.Children.Add(iconEntry);
+        var iconInput=Ui.Input(""); iconInput.Name="PromptIconInput"; iconInput.Height=36; iconInput.Padding=new Thickness(8,4,8,4);
+        iconInput.ToolTip=@"粘贴单个图标，或输入码点（如 U+F121、\udb81\uddca）";
+        System.Windows.Automation.AutomationProperties.SetName(iconInput,"粘贴图标或输入码点");
+        var iconHint=Text("",11,true); iconHint.Margin=new Thickness(0,5,0,0); iconOptions.Children.Add(iconHint);
+        var fontPanel=new StackPanel { Margin=new Thickness(0,6,0,0) };
+        var advanced=new Expander { Name="PromptIconAdvanced",Header="字体选项",Content=fontPanel,Margin=new Thickness(0,8,0,0),FontSize=12 };
+        advanced.SetResourceReference(Control.ForegroundProperty,"MutedTextBrush"); iconOptions.Children.Add(advanced);
         var iconFont=new ComboBox { Name="PromptIconFont" };
         iconFont.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle"); fontPanel.Children.Add(iconFont);
-        var preview=new ContentControl { Name="PromptIconPreview",Width=34,Height=34,HorizontalAlignment=HorizontalAlignment.Left,Margin=new Thickness(0,8,0,0) }; promptEditor.Children.Add(preview);
-        var iconWarning=Text("",12,true); iconWarning.Name="PromptIconWarning"; promptEditor.Children.Add(iconWarning);
-        promptEditor.Children.Add(Text("提示词内容",13,false,FontWeights.SemiBold));
+        var iconWarning=Text("",11,true); iconWarning.Name="PromptIconWarning"; iconWarning.Margin=new Thickness(0,6,0,0); promptEditor.Children.Add(iconWarning);
+        var promptLabel=Text("提示词内容",13,false,FontWeights.SemiBold); promptLabel.Margin=new Thickness(0,18,0,0); promptEditor.Children.Add(promptLabel);
         var contentInput=Ui.Input("",true); contentInput.Name="PromptContentInput"; contentInput.Height=180; contentInput.VerticalScrollBarVisibility=ScrollBarVisibility.Auto; contentInput.Margin=new Thickness(0,6,0,0); promptEditor.Children.Add(contentInput);
         var placeholder=Text("未填写 {{text}} 时，选中文字会附加到提示词末尾。",12,true); placeholder.Margin=new Thickness(0,6,0,0); promptEditor.Children.Add(placeholder);
         var loadingEditor=false;
         PromptAction? Current()=>promptList.SelectedItem as PromptAction;
+        var chooseIcon=Ui.Button("选择图标…",()=> {
+            if(Current() is not { } current) return;
+            var picker=new NerdIconPicker(current.IconFont) { Owner=this };
+            if(picker.ShowDialog()==true) iconInput.Text=picker.SelectedGlyph!;
+        });
+        chooseIcon.Name="ChooseNerdIcon"; chooseIcon.Margin=new Thickness(8,0,0,0); DockPanel.SetDock(chooseIcon,Dock.Right); iconEntry.Children.Add(chooseIcon);
+        iconEntry.Children.Add(iconInput);
         void UpdateIconPreview()
         {
             var current=Current()??new PromptAction();
             iconOptions.Visibility=current.IconKind==PromptIconKind.Default?Visibility.Collapsed:Visibility.Visible;
-            fontPanel.Visibility=current.IconKind==PromptIconKind.NerdFont?Visibility.Visible:Visibility.Collapsed;
+            advanced.Visibility=chooseIcon.Visibility=current.IconKind==PromptIconKind.NerdFont?Visibility.Visible:Visibility.Collapsed;
+            iconHint.Text=current.IconKind==PromptIconKind.Emoji?"粘贴 Emoji，或按 Win + . 输入":"直接粘贴图标，或点击右侧选择";
             preview.Content=new Viewbox { Width=22,Height=22,Child=PromptIcons.Create(current,out var warning) };
-            iconWarning.Text=warning;
+            var inputFont=current.IconKind==PromptIconKind.NerdFont
+                ? (string.IsNullOrWhiteSpace(current.IconFont)?PromptIcons.NerdFonts.FirstOrDefault():current.IconFont)
+                : null;
+            iconInput.FontFamily=inputFont==null?FontFamily:new FontFamily(inputFont+", Segoe UI");
+            iconWarning.Text=warning.Length==0?"":warning.Contains("不包含")?"此字体不支持该图标，请重新选择。":warning.Contains("未找到")?"未找到字体，请安装 JetBrainsMono NF 后重启。":"尚未选择图标，当前使用默认图标。";
+            iconWarning.Visibility=warning.Length==0?Visibility.Collapsed:Visibility.Visible;
         }
         var add=Ui.Button("＋ 添加提示词",()=>{});
         add.Name="AddPromptButton"; add.Margin=new Thickness(0,10,0,0); DockPanel.SetDock(add,Dock.Bottom); listPanel.Children.Add(add);
@@ -187,6 +305,7 @@ internal sealed class SettingsWindow:Window
         void UpdateEditor()
         {
             loadingEditor=true;
+            advanced.IsExpanded=false;
             var current=Current();
             editorBorder.Visibility=current==null?Visibility.Collapsed:Visibility.Visible;
             empty.Visibility=current==null?Visibility.Visible:Visibility.Collapsed;
@@ -195,7 +314,6 @@ internal sealed class SettingsWindow:Window
             iconKind.SelectedItem=iconKind.Items.Cast<ComboBoxItem>().FirstOrDefault(item=>Equals(item.Tag,current?.IconKind??PromptIconKind.Default))??iconKind.Items[0];
             iconInput.Text=current?.Icon??"";
             var fontNames=new[]{"自动选择"}.Concat(PromptIcons.NerdFonts).ToList();
-            if(!string.IsNullOrWhiteSpace(current?.IconFont) && !fontNames.Contains(current.IconFont)) fontNames.Add(current.IconFont);
             iconFont.ItemsSource=fontNames; iconFont.SelectedItem=string.IsNullOrWhiteSpace(current?.IconFont)?"自动选择":current.IconFont;
             UpdateIconPreview();
             loadingEditor=false;
@@ -203,17 +321,16 @@ internal sealed class SettingsWindow:Window
         Grid.SetColumn(empty,1); editorGrid.Children.Add(empty);
         add.Click+=(_,_)=>{
             if(drafts.Count>=12) return;
-            var item=new PromptAction(); drafts.Add(item); promptList.Items.Refresh(); promptList.SelectedItem=item; add.IsEnabled=drafts.Count<12; nameInput.Focus();
+            var item=new PromptAction(); drafts.Add(item); promptList.SelectedItem=item; promptList.ScrollIntoView(item); add.IsEnabled=drafts.Count<12; nameInput.Focus();
         };
         delete.Click+=(_,_)=>{
             var index=promptList.SelectedIndex; if(index<0) return;
-            drafts.RemoveAt(index); promptList.Items.Refresh();
+            drafts.RemoveAt(index);
             promptList.SelectedIndex=drafts.Count==0?-1:Math.Min(index,drafts.Count-1);
             add.IsEnabled=true; UpdateEditor();
         };
         promptList.SelectionChanged+=(_,_)=>UpdateEditor();
         nameInput.TextChanged+=(_,_)=> { if(!loadingEditor&&Current()!=null) { Current()!.Name=nameInput.Text; UpdateIconPreview(); } };
-        nameInput.LostFocus+=(_,_)=>promptList.Items.Refresh();
         contentInput.TextChanged+=(_,_)=> { if(!loadingEditor&&Current()!=null) Current()!.Prompt=contentInput.Text; };
         iconKind.SelectionChanged+=(_,_)=> { if(!loadingEditor&&Current()!=null) { Current()!.IconKind=(PromptIconKind)((ComboBoxItem)iconKind.SelectedItem).Tag; UpdateIconPreview(); } };
         iconInput.TextChanged+=(_,_)=> { if(!loadingEditor&&Current()!=null) { Current()!.Icon=iconInput.Text; UpdateIconPreview(); } };
@@ -234,9 +351,21 @@ internal sealed class SettingsWindow:Window
                 if(drafts.Any(x=>x.IconKind!=PromptIconKind.Default && PromptIcons.Glyph(x).Length==0)) throw new InvalidOperationException("自定义图标必须填写一个 Emoji 或 Nerd Font 字符/有效码点。");
                 var selectedTheme=(theme.SelectedItem as ComboBoxItem)?.Tag is AppTheme value?value:AppTheme.System;
                 var next=new Settings { Theme=selectedTheme,ToolbarPosition=toolbarPosition.SelectedIndex==1?ToolbarPlacement.Below:ToolbarPlacement.Above,Enabled=enabled.IsChecked==true,TerminalShift=terminal.IsChecked==true,SearchUrl=search.Text.Trim(),ExcludedApps=excluded.Text,BaseUrl=url.Text.Trim(),Model=model.Text.Trim(),EncryptedKey=settings.EncryptedKey,Prompts=drafts.Select(x=> { var copy=x.Copy(); copy.Name=copy.Name.Trim(); return copy; }).ToList() };
+                next.AutoCloseResultOnDeactivate=autoCloseResult.IsChecked==true;
+                next.ResultFontFamily=resultFont.SelectedValue as string??"";
+                next.ResultFontSize=SelectedResultSize();
+                next.DeepSeekFlashThinking=thinking.IsChecked==true;
                 if(clear.IsChecked==true) next.SetKey("");
                 if(secret.Password.Length>0) next.SetKey(secret.Password);
-                next.Save(); saved(next); Close();
+                next.Save(); saved(next);
+                var startupEnabled=launchAtLogin.IsChecked==true;
+                if(launchAtLogin.IsEnabled && startupEnabled!=startupWasEnabled) {
+                    try { startupRegistration.SetEnabled(startupEnabled,Environment.ProcessPath); }
+                    catch(Exception ex) when(ex is System.Security.SecurityException or UnauthorizedAccessException or IOException or InvalidOperationException) {
+                        MessageBox.Show(this,$"其他设置已保存，登录启动设置未能更新。\n{ex.Message}","无法更新登录启动",MessageBoxButton.OK,MessageBoxImage.Warning);
+                    }
+                }
+                Close();
             } catch(Exception ex) { MessageBox.Show(this,ex.Message,"无法保存",MessageBoxButton.OK,MessageBoxImage.Warning); }
         },"PrimaryButtonStyle"));
         ShowPage(generalPage,generalNav);

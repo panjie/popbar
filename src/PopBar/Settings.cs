@@ -8,9 +8,18 @@ namespace PopBar;
 public enum AppTheme { System, Light, Dark }
 public enum ToolbarPlacement { Above, Below }
 public enum PromptIconKind { Default, Emoji, NerdFont }
-public sealed class PromptAction
+public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged
 {
-    public string Name { get; set; } = "新操作";
+    string name="新操作";
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+    public string Name {
+        get=>name;
+        set {
+            if(name==value) return;
+            name=value;
+            PropertyChanged?.Invoke(this,new System.ComponentModel.PropertyChangedEventArgs(nameof(Name)));
+        }
+    }
     public string Prompt { get; set; } = "请处理以下文字：\n{{text}}";
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public PromptIconKind IconKind { get; set; }
@@ -26,10 +35,14 @@ public sealed class Settings
     public ToolbarPlacement ToolbarPosition { get; set; } = ToolbarPlacement.Above;
     public bool Enabled { get; set; } = true;
     public bool TerminalShift { get; set; } = true;
+    public bool AutoCloseResultOnDeactivate { get; set; } = true;
+    public string ResultFontFamily { get; set; } = "";
+    public int ResultFontSize { get; set; } = ResultTypography.DefaultSize;
     public string ExcludedApps { get; set; } = "KeePass, KeePassXC, 1Password, Bitwarden";
     public string SearchUrl { get; set; } = "https://www.google.com/search?q={text}";
     public string BaseUrl { get; set; } = "https://api.deepseek.com/v1";
     public string Model { get; set; } = "";
+    public bool DeepSeekFlashThinking { get; set; }
     public string EncryptedKey { get; set; } = "";
     public List<PromptAction> Prompts { get; set; } = new() {
         new() { Name="翻译",Prompt="将以下文字翻译成简体中文，仅返回译文：\n{{text}}" },

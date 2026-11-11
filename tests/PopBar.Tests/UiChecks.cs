@@ -24,6 +24,8 @@ internal static class UiChecks
 
     static int RunOnUiThread()
     {
+        var testFont=Environment.GetEnvironmentVariable("POPBAR_TEST_NERD_FONT");
+        var testFamily=string.IsNullOrEmpty(testFont)?null:Fonts.GetFontFamilies(System.IO.Path.GetDirectoryName(testFont)!+System.IO.Path.DirectorySeparatorChar).First();
         var passed=0;
         var app=new App { StartServices=false };
         app.InitializeComponent();
@@ -97,11 +99,42 @@ internal static class UiChecks
         Check(PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon="U+F121" })=="\uF121" &&
             PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon="0xF0001" })==char.ConvertFromUtf32(0xF0001),"nerd BMP and supplementary code points");
         Check(PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon="U+110000" })=="","invalid code point rejected");
+        foreach(var value in new[]{@"\udb81\uddca",@"\uDB81\uDDCA",@"\U000F05CA","U+F05CA","0xF05CA","F05CA",char.ConvertFromUtf32(0xF05CA)})
+            Check(PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon=value })==char.ConvertFromUtf32(0xF05CA),$"nerd supplementary input {value}");
+        Check(PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon=@" \uF121 " })=="\uF121","nerd escaped BMP with whitespace");
+        foreach(var value in new[]{@"\udb81",@"\uddca",@"\uddca\udb81",@"\udb81\uF121",@"\uF121\uF122",@"\uXYZ1",@"\uF12",@"\U00110000",@"\U0000D800","\uDB81","\uDDCA",""})
+            Check(PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon=value })=="",$"invalid nerd input rejected {value}");
         var missing=PromptIcons.Create(new PromptAction { Name="翻译",IconKind=PromptIconKind.NerdFont,Icon="F121",IconFont="Missing Nerd Font For Test" },out var missingWarning);
         Check(missing.Text=="\uE774" && missingWarning.Length>0,"missing Nerd Font falls back safely");
         var restored=System.Text.Json.JsonSerializer.Deserialize<PromptAction>(System.Text.Json.JsonSerializer.Serialize(emojiPrompt.Copy()))!;
         Check(restored.IconKind==PromptIconKind.Emoji && restored.Icon==emojiPrompt.Icon,"icon draft copy and JSON round trip");
         Check(System.Text.Json.JsonSerializer.Deserialize<PromptAction>("{}")!.IconKind==PromptIconKind.Default,"legacy prompts retain default icons");
+        foreach(var family in new[]{"JetBrainsMono NF","JetBrainsMono NFM","JetBrainsMono NFP","JetBrainsMonoNL NF","JetBrainsMonoNL NFM","JetBrainsMonoNL NFP","jetbrainsmono nf"})
+            Check(PromptIcons.IsNerdFontFamily(family),$"detect Nerd Font family {family}");
+        foreach(var family in new[]{"Segoe UI","JetBrains Mono","Maple Mono","NFranklin","Info Font","Maple Mono NF CN","Maple Mono Normal NF CN","Symbols Nerd Font"})
+            Check(!PromptIcons.IsNerdFontFamily(family),$"exclude unpatched family {family}");
+        Console.WriteLine("Detected Nerd Fonts: "+string.Join(", ",PromptIcons.NerdFonts));
+        var catalog=NerdIconCatalog.Entries;
+        Check(catalog.Length>10000 && catalog.All(item=>PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon=item.Glyph })==item.Glyph),"bundled nerd catalog contains valid glyphs");
+        Check(NerdIconCatalog.Search(catalog,"MD TRANSLATE").Any(item=>item.Code==0xF05CA),"nerd search accepts case-insensitive name terms");
+        foreach(var query in new[]{"U+F05CA","0xf05ca",@"\udb81\uddca",char.ConvertFromUtf32(0xF05CA)})
+            Check(NerdIconCatalog.Search(catalog,query).Any(item=>item.Code==0xF05CA),"nerd search accepts code point or pasted glyph");
+        var picker=testFamily==null?new NerdIconPicker((string?)null):new NerdIconPicker(testFamily);
+        picker.Show(); picker.UpdateLayout();
+        Capture(picker,"nerd-icon-picker");
+        var pickerSearch=FindNamed<TextBox>(picker,"NerdIconSearch");
+        pickerSearch.Text="no_such_icon_for_test";
+        Check(FindNamed<TextBlock>(picker,"NerdIconStatus").Text.Contains("没有匹配"),"nerd picker empty search state");
+        picker.Close();
+        Check(picker.SelectedGlyph==null,"closing nerd picker leaves selection unchanged");
+        if(testFamily!=null || PromptIcons.NerdFonts.Length>0) {
+            var selectionPicker=testFamily==null?new NerdIconPicker((string?)null):new NerdIconPicker(testFamily);
+            selectionPicker.Loaded+=(_,_)=>selectionPicker.Dispatcher.BeginInvoke(new Action(()=> {
+                var tile=Descendants<Button>(selectionPicker).FirstOrDefault(button=>button.ToolTip is string tip && tip.Contains("U+"));
+                if(tile==null) selectionPicker.Close(); else tile.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }));
+            Check(selectionPicker.ShowDialog()==true && selectionPicker.SelectedGlyph!=null,"nerd picker selects a supported glyph");
+        }
 
         foreach(var orientation in new[]{Orientation.Vertical,Orientation.Horizontal}) {
             var bar=new System.Windows.Controls.Primitives.ScrollBar { Orientation=orientation,Minimum=0,Maximum=100,Value=40,ViewportSize=10 };
@@ -188,7 +221,9 @@ internal static class UiChecks
             Check(Native.GetForegroundWindow()==originHandle && !foregroundResult.Topmost,"preview does not keep stealing foreground");
         } finally { activationToolbar.Close(); foregroundResult.Close(); origin.Close(); System.Windows.Forms.Cursor.Position=oldCursor; }
 
-        var sourceSettings=new Settings();
+        var chosenFont=Fonts.SystemFontFamilies.First(font=>font.Source=="Consolas");
+        var sourceSettings=new Settings { ResultFontFamily=chosenFont.Source,ResultFontSize=18 };
+        sourceSettings.SetKey("test-settings-key");
         var settingsWindow=new SettingsWindow(sourceSettings,_=>{});
         try {
             var generalNav=FindNamed<Button>(settingsWindow,"GeneralNavigationButton");
@@ -199,6 +234,18 @@ internal static class UiChecks
             var promptsPage=FindNamed<FrameworkElement>(settingsWindow,"PromptsPage");
             void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Click(aiNav);
+            var keyInput=FindNamed<PasswordBox>(settingsWindow,"ApiKeyInput");
+            var keyMask=FindNamed<TextBlock>(settingsWindow,"SavedApiKeyMask");
+            var clearKey=FindNamed<CheckBox>(settingsWindow,"ClearSavedApiKey");
+            Check(keyMask.Visibility==Visibility.Visible && keyInput.Password.Length==0,"saved key displays mask without populating password");
+            keyInput.Password="replacement";
+            Check(keyMask.Visibility==Visibility.Collapsed,"replacement key hides saved mask");
+            keyInput.Clear();
+            Check(keyMask.Visibility==Visibility.Visible,"empty replacement retains saved key indicator");
+            clearKey.IsChecked=true;
+            Check(keyMask.Visibility==Visibility.Collapsed,"clearing saved key hides mask");
+            clearKey.IsChecked=false;
+            Check(keyMask.Visibility==Visibility.Visible && sourceSettings.GetKey()=="test-settings-key","cancel clearing restores mask without changing stored key");
             Check(aiPage.Visibility==Visibility.Visible && generalPage.Visibility!=Visibility.Visible && promptsPage.Visibility!=Visibility.Visible,"settings AI navigation");
             Click(promptsNav);
             Check(promptsPage.Visibility==Visibility.Visible && generalPage.Visibility!=Visibility.Visible && aiPage.Visibility!=Visibility.Visible,"settings prompts navigation");
@@ -206,6 +253,9 @@ internal static class UiChecks
             Check(generalPage.Visibility==Visibility.Visible && aiPage.Visibility!=Visibility.Visible && promptsPage.Visibility!=Visibility.Visible,"settings general navigation");
             var theme=FindNamed<ComboBox>(settingsWindow,"ThemeSelector");
             var position=FindNamed<ComboBox>(settingsWindow,"ToolbarPositionSelector");
+            var resultFont=FindNamed<ComboBox>(settingsWindow,"ResultFontSelector");
+            var resultSize=FindNamed<ComboBox>(settingsWindow,"ResultFontSizeSelector");
+            Check(Equals(resultFont.SelectedValue,chosenFont.Source) && Equals(resultSize.SelectedItem,18),"settings load saved result font and size");
             Check(position.Items.Cast<ComboBoxItem>().Select(item=>item.Tag).SequenceEqual(new object[]{ToolbarPlacement.Above,ToolbarPlacement.Below}) && position.SelectedIndex==0,"toolbar placement settings options");
             position.SelectedIndex=1;
             Check(sourceSettings.ToolbarPosition==ToolbarPlacement.Above,"toolbar placement remains a draft until saved");
@@ -235,6 +285,13 @@ internal static class UiChecks
             list.SelectedIndex=0; list.SelectedIndex=1;
             Check(iconKind.SelectedIndex==1 && iconInput.Text=="🌐","icon selection survives switching prompts");
             Capture(settingsWindow,"settings-emoji");
+            iconKind.SelectedIndex=2; iconInput.Text="U+F05CA";
+            Capture(settingsWindow,"settings-nerd-compact");
+            var fontOptions=FindNamed<Expander>(settingsWindow,"PromptIconAdvanced");
+            fontOptions.IsExpanded=true;
+            PumpFor(50);
+            Capture(settingsWindow,"settings-nerd-font-options");
+            fontOptions.IsExpanded=false;
             Check(sourceSettings.Prompts[1].Name=="解释" && sourceSettings.Prompts.Count==3,"prompt edits use isolated drafts");
             Click(add);
             Check(list.Items.Count==4 && list.SelectedIndex==3 && name.Text=="新操作","prompt add selects new draft");
@@ -253,6 +310,44 @@ internal static class UiChecks
             var editorScroll=LogicalDescendants<ScrollViewer>(settingsWindow).Single(view=>view.Content is Grid);
             Check(editorScroll.ScrollableHeight>0,"minimum settings size scrolls prompt editor");
             Capture(settingsWindow,"settings-minimum-full");
+
+            WindowPresentation.ShowForeground(settingsWindow);
+            var firstDraft=(PromptAction)list.Items[0];
+            list.ScrollIntoView(firstDraft);
+            PumpFor(100);
+            var firstRow=(ListBoxItem)list.ItemContainerGenerator.ContainerFromIndex(0);
+            var viewport=Descendants<ScrollContentPresenter>(list).First();
+            var start=firstRow.PointToScreen(new Point(30,firstRow.ActualHeight/2));
+            var edge=viewport.PointToScreen(new Point(30,viewport.ActualHeight-3));
+            var savedCursor=System.Windows.Forms.Cursor.Position;
+            void MoveCursor(Point point) => System.Windows.Forms.Cursor.Position=new((int)point.X,(int)point.Y);
+            var dragSteps=0;
+            var markerSeen=false;
+            var dragTimer=new System.Windows.Threading.DispatcherTimer { Interval=TimeSpan.FromMilliseconds(100) };
+            dragTimer.Tick+=(_,_)=> {
+                dragSteps++;
+                if(dragSteps==1) MoveCursor(new Point(start.X+12,start.Y));
+                if(dragSteps==2) MoveCursor(edge);
+                if(dragSteps==17) {
+                    markerSeen=System.Windows.Documents.AdornerLayer.GetAdornerLayer(viewport)?.GetAdorners(viewport)?.Length>0;
+                    mouse_event(4,0,0,0,0);
+                    dragTimer.Stop();
+                }
+            };
+            try {
+                MoveCursor(start);
+                mouse_event(2,0,0,0,0);
+                dragTimer.Start();
+                PumpFor(2000);
+                Check(markerSeen && ReferenceEquals(list.Items[11],firstDraft) && ReferenceEquals(list.SelectedItem,firstDraft),
+                    "dragging a prompt to the lower edge scrolls, marks the insertion and reorders the draft");
+                Check(sourceSettings.Prompts.Select(item=>item.Name).SequenceEqual(new[]{"翻译","解释","润色"}),
+                    "dragging prompts leaves saved order alone until Save");
+            } finally {
+                dragTimer.Stop();
+                mouse_event(4,0,0,0,0);
+                System.Windows.Forms.Cursor.Position=savedCursor;
+            }
         } finally { settingsWindow.Close(); }
 
         void VoidPump()
@@ -280,26 +375,34 @@ internal static class UiChecks
             var retry=FindNamed<Button>(resultWindow,"RetryButton");
             var copy=FindNamed<Button>(resultWindow,"CopyResultButton");
             var replace=FindNamed<Button>(resultWindow,"ReplaceButton");
-            var close=FindNamed<Button>(resultWindow,"CloseResultButton");
             Check(!replace.IsEnabled,"replacement disabled before a completed request");
-            Check(LogicalDescendants<TextBlock>(resultWindow).Any(text=>text.Text=="翻译") && LogicalDescendants<TextBlock>(resultWindow).Any(text=>text.Text.Contains("test-model") && text.Text.Contains("5")) && status.Text.Length>0,"result heading metadata and status");
+            Check(resultWindow.Title.Contains("翻译") && LogicalDescendants<TextBlock>(resultWindow).Any(text=>text.Text.Contains("test-model") && text.Text.Contains("5")) && status.Text.Length>0,"result title, metadata and status");
             Check(!output.IsToolBarVisible && output.IsSelectionEnabled && output.VerticalScrollBarVisibility==ScrollBarVisibility.Auto && output.HorizontalScrollBarVisibility==ScrollBarVisibility.Disabled,"result output is selectable scrolling markdown");
             Check(output.ClickAction==MdXaml.ClickAction.SafetyOpenBrowser,"result links use safe browser command");
-            Check(output.FontSize==14,"result markdown body font size");
-            Check(ReferenceEquals(stop.Style,app.FindResource("DangerButtonStyle")) && ReferenceEquals(retry.Style,app.FindResource("SecondaryButtonStyle")) && ReferenceEquals(copy.Style,app.FindResource("SecondaryButtonStyle")) && ReferenceEquals(replace.Style,app.FindResource("PrimaryButtonStyle")) && ReferenceEquals(close.Style,app.FindResource("SubtleButtonStyle")),"result action styles");
+            Check(ReferenceEquals(stop.Style,app.FindResource("DangerButtonStyle")) && ReferenceEquals(retry.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(copy.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(replace.Style,app.FindResource("PrimaryButtonStyle")),"result action styles");
             resultWindow.Append("第一段");
             resultWindow.Append("第二段");
             Check(MarkdownText.Plain(output.Document!)=="第一段","streaming render is throttled");
             Check(resultWindow.PlainResult()=="第一段第二段","copy uses latest streamed content");
             resultWindow.RenderMarkdown("# 标题\n\n**粗体** 与 `代码`\n\n- 第一项\n- 第二项\n\n```\nvar x = 1;\nvar y = 2;\n```\n\n| 名称 | 含义 |\n| --- | --- |\n| SCM | 源代码管理 |");
             var rendered=output.Document!;
+            Check(rendered.FontSize==13,"rendered markdown body font size");
             var renderedText=MarkdownText.Plain(rendered);
             Check(rendered.Blocks.OfType<System.Windows.Documents.Paragraph>().Any(block=>Equals(block.Tag,"Heading1")),"markdown heading rendered");
             Check(rendered.Blocks.OfType<System.Windows.Documents.List>().Any(),"markdown list rendered");
             Check(rendered.Blocks.OfType<System.Windows.Documents.Table>().Any(),"markdown table rendered");
             var codeBlock=rendered.Blocks.OfType<System.Windows.Documents.Paragraph>().FirstOrDefault(block=>Equals(block.Tag,"CodeBlock"));
             Check(codeBlock is not null,"markdown code block rendered");
-            Check(codeBlock!.FontFamily.Source.Contains("Cascadia"),"markdown code uses app code font");
+            var inlineCode=rendered.Blocks.OfType<System.Windows.Documents.Paragraph>()
+                .SelectMany(block=>block.Inlines).OfType<System.Windows.Documents.Run>().Single(run=>Equals(run.Tag,"CodeSpan"));
+            Check(codeBlock!.FontFamily.Source.Contains("Cascadia") && inlineCode.FontFamily.Source.Contains("Cascadia"),"default markdown code uses app code font");
+            var firstHeading=rendered.Blocks.OfType<System.Windows.Documents.Paragraph>().First(block=>Equals(block.Tag,"Heading1"));
+            resultWindow.ApplyTypography(sourceSettings);
+            Check(ReferenceEquals(rendered,output.Document) && rendered.FontFamily.Source==chosenFont.Source && rendered.FontSize==18
+                && firstHeading.FontSize==24 && codeBlock.FontSize==17,"changing result typography updates the existing Markdown document");
+            Check(codeBlock.FontFamily.Source==chosenFont.Source && inlineCode.FontFamily.Source==chosenFont.Source,
+                "selected result font applies to code blocks and inline code");
+            resultWindow.ApplyTypography(new Settings());
             Check(renderedText.Contains("标题") && renderedText.Contains("粗体") && renderedText.Contains("第一项") && renderedText.Contains("var x = 1;") && renderedText.Contains("var y = 2;") && renderedText.Contains("源代码管理") && !renderedText.Contains("**") && !renderedText.Contains("##"),"markdown rendering and plain text");
             resultWindow.RenderMarkdown("![追踪](file:///C:/PopBar-no-such-image.png)");
             Check(output.Document!.Blocks.OfType<System.Windows.Documents.Paragraph>().SelectMany(block=>block.Inlines).OfType<System.Windows.Documents.Hyperlink>().Any(),"markdown images become links");
@@ -312,11 +415,11 @@ internal static class UiChecks
             var hugeStarted=System.Diagnostics.Stopwatch.StartNew();
             resultWindow.RenderMarkdown(huge);
             Check(hugeStarted.Elapsed<TimeSpan.FromSeconds(30) && MarkdownText.Plain(output.Document!).Contains("结尾标记"),"near-limit markdown renders within budget");
-            resultWindow.RenderMarkdown("# 解释\n\n「SCM」是一个缩写，常见含义包括：\n\n- **Source Code Management**：源代码管理\n- **Software Configuration Management**：软件配置管理\n\n```powershell\ngit status\n```");
+            resultWindow.RenderMarkdown("## 读音（假名）\n\n> じしんの りかいが なかなか おいつかない ぶぶんが おおく、しりょうを はいけんし きになる てんを まとめました。\n\n**难读词提示**\n\n- 自身：じしん\n- 追い付かない：おいつかない\n- 拝見し：はいけんし\n\n---\n\n## 例句\n\n短い例文を `メモ` に残します。");
             var finalDocument=output.Document!;
             var finalRoot=(FrameworkElement)resultWindow.Content;
             finalRoot.Measure(new Size(664,561)); finalRoot.Arrange(new Rect(0,0,664,561)); finalRoot.UpdateLayout();
-            var finalHeading=finalDocument.Blocks.OfType<System.Windows.Documents.Paragraph>().First(block=>Equals(block.Tag,"Heading1"));
+            var finalHeading=finalDocument.Blocks.OfType<System.Windows.Documents.Paragraph>().First(block=>Equals(block.Tag,"Heading2"));
             ThemeManager.Apply(AppTheme.Light);
             var resultLight=((SolidColorBrush)resultWindow.Background).Color;
             var outputLight=((SolidColorBrush)output.Background).Color;
@@ -327,6 +430,40 @@ internal static class UiChecks
             Check(headingLight is not null && (finalHeading.Foreground as SolidColorBrush)?.Color!=headingLight,"markdown headings follow theme");
             Capture(resultWindow,"result");
         } finally { resultWindow.Close(); }
+
+        var focusTarget=new Window { Title="PopBar focus test",Width=300,Height=120 };
+        var previewPrompt=new PromptAction { Name="预览" };
+        var previewSelection=new Selection(0,"hello",false,null,null);
+        var autoClosePreview=new ResultWindow(new Settings(),previewPrompt,previewSelection);
+        var manualClosePreview=new ResultWindow(new Settings { AutoCloseResultOnDeactivate=false },previewPrompt,previewSelection);
+        var autoClosed=false;
+        autoClosePreview.Closed+=(_,_)=>autoClosed=true;
+        try {
+            WindowPresentation.ShowForeground(manualClosePreview);
+            VoidPump();
+            Check(manualClosePreview.IsActive,"manual close preview receives focus");
+            WindowPresentation.ShowForeground(autoClosePreview);
+            VoidPump();
+            Check(autoClosePreview.IsActive && !manualClosePreview.IsActive,"auto-close preview receives focus");
+            WindowPresentation.ShowForeground(focusTarget);
+            PumpFor(300);
+            Check(!autoClosePreview.IsActive && !autoClosed,"losing focus does not close the preview immediately");
+
+            autoClosePreview.Activate();
+            VoidPump();
+            Check(autoClosePreview.IsActive,"preview regains focus before its countdown expires");
+            PumpFor(5200);
+            Check(!autoClosed,"refocusing cancels the auto-close countdown");
+            Check(manualClosePreview.IsVisible,"disabled auto-close keeps the inactive preview open");
+
+            focusTarget.Activate();
+            PumpFor(5200);
+            Check(autoClosed,"preview closes after five seconds continuously out of focus");
+        } finally {
+            if(!autoClosed) autoClosePreview.Close();
+            manualClosePreview.Close();
+            focusTarget.Close();
+        }
         app.Shutdown();
         return passed;
     }

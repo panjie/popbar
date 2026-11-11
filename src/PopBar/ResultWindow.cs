@@ -2,17 +2,18 @@ using ICSharpCode.AvalonEdit;
 using MdXaml;
 using System.Text;
 using System.Windows.Documents;
+using System.Windows.Threading;
 
 namespace PopBar;
 
 internal sealed class ResultWindow:Window
 {
-    static readonly FontFamily BodyFont=new FontFamily("Segoe UI Variable, Segoe UI, Microsoft YaHei UI");
-    static readonly FontFamily CodeFont=new FontFamily("Cascadia Code, Microsoft YaHei UI, Consolas");
     readonly MarkdownScrollViewer output=new();
     readonly StringBuilder markdown=new();
-    readonly TextBlock status=Ui.Label("准备请求…",true);
+    readonly TextBlock status=new() { Text="准备请求…",FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis,VerticalAlignment=VerticalAlignment.Center };
     readonly Button retry,stop,replace;
+    readonly DispatcherTimer autoCloseTimer=new() { Interval=TimeSpan.FromSeconds(5) };
+    bool autoCloseOnDeactivate;
     CancellationTokenSource? pending;
     readonly Settings settings; readonly PromptAction prompt; readonly Selection selection;
     long nextRender;
@@ -21,64 +22,143 @@ internal sealed class ResultWindow:Window
     internal ResultWindow(Settings settings,PromptAction prompt,Selection selection)
     {
         this.settings=settings; this.prompt=prompt; this.selection=selection;
-        Title=$"PopBar · {prompt.Name}"; Width=680; Height=600; MinWidth=480; MinHeight=360; Ui.Style(this); WindowStartupLocation=WindowStartupLocation.CenterScreen;
+        autoCloseOnDeactivate=settings.AutoCloseResultOnDeactivate;
+        Title=$"PopBar · {prompt.Name}";
+        Width=560; Height=440; MinWidth=360; MinHeight=240;
+        WindowStyle=WindowStyle.ToolWindow;
+        ShowInTaskbar=false;
+        WindowStartupLocation=WindowStartupLocation.CenterScreen;
+        Ui.Style(this);
         var root=new Grid();
         root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height=new GridLength(1,GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         Content=root;
 
-        var heading=new StackPanel { Margin=new Thickness(24,22,24,16) }; root.Children.Add(heading);
-        var title=new TextBlock { Text=prompt.Name,FontSize=23,FontWeight=FontWeights.SemiBold };
-        title.SetResourceReference(TextBlock.ForegroundProperty,"TextBrush"); heading.Children.Add(title);
-        var metadata=new TextBlock { Text=$"{settings.Model}  ·  已选 {selection.Text.Length:N0} 字符",FontSize=12,Margin=new Thickness(0,6,0,0) };
-        metadata.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush"); heading.Children.Add(metadata);
+        var metadata=new TextBlock {
+            Text=$"{settings.Model}  ·  已选 {selection.Text.Length:N0} 字符",FontSize=11,
+            Margin=new Thickness(16,8,16,3),TextTrimming=TextTrimming.CharacterEllipsis
+        };
+        metadata.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush");
+        root.Children.Add(metadata);
 
         output.Name="OutputMarkdown"; output.IsToolBarVisible=false; output.IsSelectionEnabled=true;
         output.VerticalScrollBarVisibility=ScrollBarVisibility.Auto; output.HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled;
-        output.ClickAction=ClickAction.SafetyOpenBrowser; output.MarkdownStyle=MarkdownDocumentStyle();
-        output.FontFamily=BodyFont; output.FontSize=14;
-        output.SetResourceReference(Control.ForegroundProperty,"TextBrush"); output.SetResourceReference(Control.BackgroundProperty,"SurfaceBrush");
-        var outputHost=new Border { Margin=new Thickness(24,0,24,0),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(6),Padding=new Thickness(14,10,8,10),Child=output };
-        outputHost.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush"); outputHost.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
-        Grid.SetRow(outputHost,1); root.Children.Add(outputHost);
+        output.ClickAction=ClickAction.SafetyOpenBrowser;
+        output.MarkdownStyle=(Style)FindResource("ResultMarkdownStyle");
+        ApplyTypography(settings);
+        output.SetResourceReference(Control.ForegroundProperty,"TextBrush");
+        output.SetResourceReference(Control.BackgroundProperty,"WindowBackgroundBrush");
+        Grid.SetRow(output,1); root.Children.Add(output);
 
-        status.Name="StatusText"; status.Margin=new Thickness(27,12,27,10); Grid.SetRow(status,2); root.Children.Add(status);
-        var footer=new Border { BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(20,10,20,10) }; Grid.SetRow(footer,3); root.Children.Add(footer);
-        footer.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush");
+        status.Name="StatusText";
+        status.Margin=new Thickness(0,0,8,0);
+        status.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush");
+        status.SetBinding(FrameworkElement.ToolTipProperty,new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source=status });
+        var footer=new Border { BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(16,5,10,5) };
+        Grid.SetRow(footer,2); root.Children.Add(footer);
         footer.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
-        var buttons=new WrapPanel { HorizontalAlignment=HorizontalAlignment.Right }; footer.Child=buttons;
-        stop=Ui.Button("停止",()=>pending?.Cancel(),"DangerButtonStyle"); stop.Name="StopButton"; buttons.Children.Add(stop);
-        retry=Ui.Button("重试",()=>_=Run()); retry.Name="RetryButton"; buttons.Children.Add(retry);
-        var copy=Ui.Button("复制",()=> { status.Text=Actions.Copy(PlainResult())?"已复制到剪贴板。":"剪贴板正忙，请重试。"; }); copy.Name="CopyResultButton"; buttons.Children.Add(copy);
-        replace=Ui.Button("替换原文",async ()=> {
+        var footerContent=new DockPanel(); footer.Child=footerContent;
+        var buttons=new StackPanel { Orientation=Orientation.Horizontal };
+        DockPanel.SetDock(buttons,Dock.Right); footerContent.Children.Add(buttons);
+        footerContent.Children.Add(status);
+
+        Button ActionButton(string name,string label,Action action,string style="SubtleButtonStyle")
+        {
+            var button=Ui.Button(label,action,style);
+            button.Name=name;
+            button.MinHeight=28;
+            button.Padding=new Thickness(9,3,9,3);
+            button.Margin=new Thickness(2,0,0,0);
+            buttons.Children.Add(button);
+            return button;
+        }
+        stop=ActionButton("StopButton","停止",()=>pending?.Cancel(),"DangerButtonStyle");
+        retry=ActionButton("RetryButton","重试",()=>_=Run());
+        ActionButton("CopyResultButton","复制",()=> {
+            status.Text=Actions.Copy(PlainResult())?"已复制到剪贴板。":"剪贴板正忙，请重试。";
+        });
+        replace=ActionButton("ReplaceButton","替换原文",async ()=> {
             replace!.IsEnabled=false;
-            try { if(await Actions.Replace(selection,PlainResult())) { Close(); return; } status.Text="原选区已改变或无法确认可编辑，请复制后手动粘贴。"; }
+            try {
+                var replaced=await Actions.Replace(selection,PlainResult());
+                if(closed) return;
+                if(replaced) { Close(); return; }
+                status.Text="原选区已改变或无法确认可编辑，请复制后手动粘贴。";
+            }
             catch { status.Text="无法替换，请复制后手动粘贴。"; }
-        },"PrimaryButtonStyle"); replace.Name="ReplaceButton"; buttons.Children.Add(replace);
-        var closeButton=Ui.Button("关闭",Close,"SubtleButtonStyle"); closeButton.Name="CloseResultButton"; buttons.Children.Add(closeButton);
+        },"PrimaryButtonStyle");
         replace.IsEnabled=false;
-        Loaded+=async (_,_)=>await Run(); Closed+=(_,_)=> { closed=true; pending?.Cancel(); };
+        replace.Visibility=stop.Visibility=Visibility.Collapsed;
+
+        Activated+=(_,_)=>autoCloseTimer.Stop();
+        Deactivated+=(_,_)=> { if(autoCloseOnDeactivate && !closed) autoCloseTimer.Start(); };
+        autoCloseTimer.Tick+=(_,_)=> {
+            autoCloseTimer.Stop();
+            if(autoCloseOnDeactivate && !IsActive && !closed) Close();
+        };
+        Loaded+=async (_,_)=>await Run();
+        Closed+=(_,_)=> {
+            closed=true;
+            autoCloseTimer.Stop();
+            pending?.Cancel();
+        };
         PreviewKeyDown+=(_,e)=> { if(e.Key==System.Windows.Input.Key.Escape) Close(); };
     }
-    static Style MarkdownDocumentStyle()
+    internal void ApplyTypography(Settings preferences)
     {
-        var style=new Style(typeof(FlowDocument),MarkdownStyle.SasabuneCompact);
-        style.Setters.Add(new Setter(FlowDocument.FontFamilyProperty,BodyFont));
-        style.Setters.Add(new Setter(FlowDocument.FontSizeProperty,14.0));
-        return style;
+        var size=ResultTypography.NormalizeSize(preferences.ResultFontSize);
+        var font=ResultTypography.ResolveFont(preferences.ResultFontFamily);
+        output.FontFamily=font;
+        output.FontSize=size;
+        output.Resources["ResultBodyFont"]=font;
+        output.Resources["ResultCodeFont"]=ReferenceEquals(font,ResultTypography.DefaultFont)?ResultTypography.DefaultCodeFont:font;
+        output.Resources["ResultBodySize"]=(double)size;
+        output.Resources["ResultLineHeight"]=Math.Round(size*20.0/ResultTypography.DefaultSize);
+        output.Resources["ResultHeading1Size"]=(double)(size+6);
+        output.Resources["ResultHeading2Size"]=(double)(size+3);
+        output.Resources["ResultHeading3Size"]=(double)(size+1);
+        output.Resources["ResultCodeSize"]=(double)(size-1);
+    }
+    internal void SetAutoCloseOnDeactivate(bool enabled)
+    {
+        if(autoCloseOnDeactivate==enabled || closed) return;
+        autoCloseOnDeactivate=enabled;
+        if(enabled && IsVisible && !IsActive) autoCloseTimer.Start();
+        else autoCloseTimer.Stop();
     }
     async Task Run()
     {
-        pending?.Dispose(); pending=new(); var token=pending.Token;
-        markdown.Clear(); renderedLength=0; nextRender=0; Display(""); retry.IsEnabled=false; replace.IsEnabled=false; stop.IsEnabled=true; status.Text="正在生成…";
+        if(pending!=null || closed) return;
+        using var request=new CancellationTokenSource();
+        pending=request;
+        markdown.Clear(); renderedLength=0; nextRender=0; Display("");
+        retry.Visibility=replace.Visibility=Visibility.Collapsed;
+        stop.Visibility=Visibility.Visible;
+        status.Text="等待服务响应…";
         try {
-            await AiClient.Stream(settings,prompt,selection.Text,chunk=> { if(!closed) Append(chunk); },token);
-            if(!closed) { Render(true); status.Text="完成 · 替换前会重新确认原选区。"; replace.IsEnabled=selection.Editable; }
+            await AiClient.Stream(settings,prompt,selection.Text,chunk=> {
+                if(closed) return;
+                if(markdown.Length==0) status.Text="正在输出…";
+                Append(chunk);
+            },request.Token,onThinking:()=> {
+                if(!closed) status.Text="模型思考中…";
+            });
+            if(!closed) {
+                Render(true);
+                status.Text="已完成";
+                replace.IsEnabled=selection.Editable;
+                replace.Visibility=selection.Editable?Visibility.Visible:Visibility.Collapsed;
+            }
         } catch(OperationCanceledException) { if(!closed) { Render(true); status.Text="已停止或超时 · 部分结果未完成，可手动复制。"; } }
         catch(Exception ex) { if(!closed) { Render(true); status.Text=ex is InvalidOperationException or InvalidDataException ? ex.Message : "请求失败，请检查网络和接口设置。"; } }
-        finally { if(!closed) { retry.IsEnabled=true; stop.IsEnabled=false; } }
+        finally {
+            pending=null;
+            if(!closed) {
+                retry.Visibility=Visibility.Visible;
+                stop.Visibility=Visibility.Collapsed;
+            }
+        }
     }
     internal void Append(string chunk)
     {
@@ -99,37 +179,41 @@ internal sealed class ResultWindow:Window
         Display(source);
         var elapsed=Environment.TickCount64-started;
         nextRender=Environment.TickCount64+Math.Max(120,elapsed*8);
-    }    internal void RenderMarkdown(string source)
+    }
+    internal void RenderMarkdown(string source)
     {
         markdown.Clear(); markdown.Append(source); nextRender=0;
         Display(source);
     }
     void Display(string source)
     {
+        var scroll=FindScrollViewer(output);
+        var offset=scroll?.VerticalOffset??0;
+        var followEnd=scroll==null || scroll.ScrollableHeight-offset<8;
         var safe=MarkdownText.DemoteImages(source);
         try { output.Markdown=safe; NormalizeCodeBlocks(output.Document!); }
         catch {
             try {
-                var fallback=new FlowDocument(new Paragraph(new Run(safe))) { FontFamily=BodyFont,FontSize=14 };
-                fallback.SetResourceReference(TextElement.ForegroundProperty,"TextBrush");
+                var fallback=new FlowDocument(new Paragraph(new Run(safe))) { Style=output.MarkdownStyle };
                 output.Document=fallback;
             } catch { }
         }
         renderedLength=source.Length;
-        try { ScrollToEnd(output); } catch { }
+        if(followEnd) ScrollToEnd(output);
+        else scroll?.ScrollToVerticalOffset(offset);
     }
     internal static void ScrollToEnd(MarkdownScrollViewer viewer)
     {
         viewer.UpdateLayout();
         FindScrollViewer(viewer)?.ScrollToEnd();
-        viewer.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,new Action(()=> { try { FindScrollViewer(viewer)?.ScrollToEnd(); } catch { } }));
+        viewer.Dispatcher.BeginInvoke(DispatcherPriority.Loaded,new Action(()=>FindScrollViewer(viewer)?.ScrollToEnd()));
     }
     static void NormalizeCodeBlocks(FlowDocument document) => NormalizeBlocks(document.Blocks);
     static void NormalizeBlocks(BlockCollection blocks)
     {
         foreach(var block in blocks.ToList()) {
             if(block is BlockUIContainer { Tag: "CodeBlock" } container && CodeText(container) is { } code) {
-                var paragraph=new Paragraph(new Run(code)) { Tag="CodeBlock",FontFamily=CodeFont };
+                var paragraph=new Paragraph(new Run(code)) { Tag="CodeBlock" };
                 blocks.InsertAfter(container,paragraph); blocks.Remove(container);
                 continue;
             }

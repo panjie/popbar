@@ -6,6 +6,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/PopBar;component/Themes/Light.xaml" />
+                <ResourceDictionary Source="/PopBar;component/Themes/ResultMarkdown.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="BaseButtonStyle" TargetType="Button">
@@ -101,9 +102,9 @@
                 <Setter Property="SelectionOpacity" Value="0.25" />
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Padding" Value="10,8" />
+                <Setter Property="Padding" Value="10,4" />
                 <Setter Property="Margin" Value="0" />
-                <Setter Property="MinHeight" Value="36" />
+                <Setter Property="MinHeight" Value="32" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
                 <Setter Property="Template">
                     <Setter.Value>
@@ -112,7 +113,7 @@
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="6"
-                                    Padding="{TemplateBinding Padding}"
+                                    Padding="0"
                                     SnapsToDevicePixels="True">
                                 <ScrollViewer x:Name="PART_ContentHost" />
                             </Border>
@@ -139,8 +140,8 @@
                 <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Padding" Value="10,8" />
-                <Setter Property="MinHeight" Value="36" />
+                <Setter Property="Padding" Value="10,4" />
+                <Setter Property="MinHeight" Value="32" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
                 <Setter Property="Template">
                     <Setter.Value>
@@ -149,7 +150,7 @@
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="6"
-                                    Padding="{TemplateBinding Padding}">
+                                    Padding="0">
                                 <ScrollViewer x:Name="PART_ContentHost" />
                             </Border>
                         </ControlTemplate>
@@ -221,6 +222,16 @@
                 </Setter>
             </Style>
             <Style TargetType="CheckBox" BasedOn="{StaticResource CheckBoxStyle}" />
+
+            <DataTemplate x:Key="PromptOrderItemTemplate">
+                <DockPanel>
+                    <Path Data="M 2,2 h 0.2 M 6,2 h 0.2 M 2,6 h 0.2 M 6,6 h 0.2 M 2,10 h 0.2 M 6,10 h 0.2"
+                          Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="2"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" Cursor="SizeAll"
+                          Margin="0,0,8,0" VerticalAlignment="Center" ToolTip="拖动调整顺序" />
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </DockPanel>
+            </DataTemplate>
 
             <Style TargetType="ListBoxItem">
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
@@ -374,10 +385,21 @@
                                         <RepeatButton x:Name="DecreaseButton" Command="{x:Static ScrollBar.PageUpCommand}" Opacity="0" Focusable="False" />
                                     </Track.DecreaseRepeatButton>
                                     <Track.Thumb>
-                                        <Thumb Margin="2">
+                                        <Thumb>
                                             <Thumb.Template>
                                                 <ControlTemplate TargetType="Thumb">
-                                                    <Border Background="{DynamicResource MutedTextBrush}" Opacity="0.65" CornerRadius="4" />
+                                                    <Border x:Name="Handle" Background="{DynamicResource MutedTextBrush}" Opacity="0.35" CornerRadius="2" Margin="3,2" />
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Handle" Property="Opacity" Value="0.75" />
+                                                        </Trigger>
+                                                        <Trigger Property="IsDragging" Value="True">
+                                                            <Setter TargetName="Handle" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding Orientation,RelativeSource={RelativeSource AncestorType=ScrollBar}}" Value="Horizontal">
+                                                            <Setter TargetName="Handle" Property="Margin" Value="2,3" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
                                                 </ControlTemplate>
                                             </Thumb.Template>
                                         </Thumb>

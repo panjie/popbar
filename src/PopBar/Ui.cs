@@ -33,7 +33,7 @@ internal static class Ui
     }
     internal static TextBox Input(string text,bool multiline=false)
     {
-        var box=new TextBox { Text=text,AcceptsReturn=multiline,TextWrapping=multiline?TextWrapping.Wrap:TextWrapping.NoWrap,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,MinHeight=multiline?78:36,VerticalContentAlignment=multiline?VerticalAlignment.Top:VerticalAlignment.Center };
+        var box=new TextBox { Text=text,AcceptsReturn=multiline,TextWrapping=multiline?TextWrapping.Wrap:TextWrapping.NoWrap,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,MinHeight=multiline?78:32,VerticalContentAlignment=multiline?VerticalAlignment.Top:VerticalAlignment.Center };
         box.SetResourceReference(FrameworkElement.StyleProperty,"InputTextBoxStyle");
         return box;
     }

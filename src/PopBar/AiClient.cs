@@ -16,7 +16,13 @@ public static class AiClient
         return new Uri(uri,"chat/completions");
     }
     public static string BuildPrompt(string template,string text) => template.Contains("{{text}}",StringComparison.Ordinal)?template.Replace("{{text}}",text,StringComparison.Ordinal):template+"\n\n"+text;
-    public static async Task Stream(Settings settings,PromptAction action,string text,Action<string> append,CancellationToken token,HttpMessageHandler? handler=null)
+    internal static bool IsOfficialDeepSeekFlash(string baseUrl,string model) =>
+        (model.Trim() is "deepseek-flash" or "deepseek-v4-flash" or "deepseek-v4-flash-vision-exp") &&
+        Uri.TryCreate(baseUrl.Trim(),UriKind.Absolute,out var uri) && uri.Scheme==Uri.UriSchemeHttps &&
+        uri.IsDefaultPort && uri.Host=="api.deepseek.com" && uri.UserInfo.Length==0 &&
+        uri.Query.Length==0 && uri.Fragment.Length==0 && (uri.AbsolutePath.TrimEnd('/') is "" or "/v1");
+
+    public static async Task Stream(Settings settings,PromptAction action,string text,Action<string> append,CancellationToken token,HttpMessageHandler? handler=null,Action? onThinking=null)
     {
         if(string.IsNullOrWhiteSpace(settings.Model)) throw new InvalidOperationException("请先在设置中填写模型 ID。");
         using var client=new HttpClient(handler??new HttpClientHandler { AllowAutoRedirect=false }) { Timeout=Timeout.InfiniteTimeSpan };
@@ -25,14 +31,21 @@ public static class AiClient
         using var request=new HttpRequestMessage(HttpMethod.Post,Endpoint(settings.BaseUrl));
         var key=settings.GetKey();
         if(key.Length>0) request.Headers.Authorization=new AuthenticationHeaderValue("Bearer",key);
-        request.Content=new StringContent(JsonSerializer.Serialize(new { model=settings.Model.Trim(),stream=true,messages=new[]{new { role="user",content=BuildPrompt(action.Prompt,text) }} }),Encoding.UTF8,"application/json");
+        var payload=new Dictionary<string,object> {
+            ["model"]=settings.Model.Trim(),
+            ["stream"]=true,
+            ["messages"]=new[]{new { role="user",content=BuildPrompt(action.Prompt,text) }}
+        };
+        if(IsOfficialDeepSeekFlash(settings.BaseUrl,settings.Model))
+            payload["thinking"]=new { type=settings.DeepSeekFlashThinking?"enabled":"disabled" };
+        request.Content=new StringContent(JsonSerializer.Serialize(payload),Encoding.UTF8,"application/json");
         using var response=await client.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,deadline.Token);
         if(!response.IsSuccessStatusCode) throw new InvalidOperationException($"API 请求失败（HTTP {(int)response.StatusCode}）。请检查地址、模型、密钥和服务额度。");
         using var stream=await response.Content.ReadAsStreamAsync(deadline.Token);
         using var reader=new StreamReader(stream,Encoding.UTF8);
-        await ParseStream(reader,append,deadline.Token);
+        await ParseStream(reader,append,deadline.Token,onThinking);
     }
-    public static async Task ParseStream(TextReader reader,Action<string> append,CancellationToken token)
+    public static async Task ParseStream(TextReader reader,Action<string> append,CancellationToken token,Action? onThinking=null)
     {
         // Bound both each SSE line and the full wire response before parsing JSON.
         var line=new StringBuilder(); var eventData=new StringBuilder(); int received=0,output=0;
@@ -47,8 +60,15 @@ public static class AiClient
             if(!json.RootElement.TryGetProperty("choices",out var choices)||choices.GetArrayLength()==0) return;
             var choice=choices[0];
             if(choice.TryGetProperty("finish_reason",out var reason) && reason.ValueKind==JsonValueKind.String) finish=reason.GetString();
-            if(!choice.TryGetProperty("delta",out var delta)||!delta.TryGetProperty("content",out var content)||content.ValueKind!=JsonValueKind.String) return;
-            var value=content.GetString()!; output+=value.Length;
+            if(!choice.TryGetProperty("delta",out var delta) || delta.ValueKind!=JsonValueKind.Object) return;
+            if(onThinking!=null && output==0 && delta.TryGetProperty("reasoning_content",out var reasoning) &&
+               reasoning.ValueKind==JsonValueKind.String && reasoning.GetString() is { Length: >0 }) {
+                onThinking();
+                onThinking=null;
+            }
+            if(!delta.TryGetProperty("content",out var content) || content.ValueKind!=JsonValueKind.String ||
+               content.GetString() is not { Length: >0 } value) return;
+            output+=value.Length;
             if(output>262144) throw new InvalidDataException("结果超过 256K 字符，已停止。");
             append(value);
         }

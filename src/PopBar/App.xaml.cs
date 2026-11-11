@@ -23,8 +23,13 @@ public partial class App:Application
     {
         base.OnStartup(e);
         if(!StartServices) return;
+        var launchedAtLogin=e.Args.Contains(StartupRegistration.LaunchArgument);
         instance=new Mutex(true,"Local\\PopBar.Personal",out var created);
-        if(!created) { MessageBox.Show("PopBar 已在运行，请在系统托盘中打开设置。","PopBar"); Shutdown(); return; }
+        if(!created) {
+            if(!launchedAtLogin) MessageBox.Show("PopBar 已在运行，请在系统托盘中打开设置。","PopBar");
+            Shutdown();
+            return;
+        }
         try {
             bool first=!File.Exists(Settings.FilePath);
             try { settings=Settings.Load(); } catch { MessageBox.Show("设置文件无法读取，将使用默认设置。原文件不会自动覆盖。","PopBar"); }
@@ -46,7 +51,7 @@ public partial class App:Application
             timer=new DispatcherTimer { Interval=TimeSpan.FromMilliseconds(180) };
             timer.Tick+=(_,_)=> { if(toolbar.IsVisible && Native.GetForegroundWindow()!=selectionWindow) Dismiss(); }; timer.Start();
             if(!input.HotkeyRegistered) Notify("Ctrl + Alt + Space 已被占用；自动划词仍可用。");
-            if(first || e.Args.Contains("--settings")) Configure();
+            if((first && !launchedAtLogin) || e.Args.Contains("--settings")) Configure();
         } catch(Exception ex) { MessageBox.Show(ex.Message,"PopBar 启动失败"); Shutdown(1); }
     }
     void Dismiss() { generation++; toolbar?.Hide(); }
@@ -74,7 +79,11 @@ public partial class App:Application
             selectionWindow=window;
             toolbar.Present(selection,point,settings,Configure,prompt=> {
                 if(string.IsNullOrWhiteSpace(settings.Model)) { Configure(); return; }
-                resultWindow?.Close(); resultWindow=new(settings,prompt,selection); WindowPresentation.ShowForeground(resultWindow);
+                resultWindow?.Close();
+                var preview=new ResultWindow(settings,prompt,selection);
+                resultWindow=preview;
+                preview.Closed+=(_,_)=> { if(resultWindow==preview) resultWindow=null; };
+                WindowPresentation.ShowForeground(preview);
             },Notify);
         } catch { if(manual) Notify("无法读取选区，请重试。"); }
         finally { probing=false; }
@@ -118,7 +127,14 @@ public partial class App:Application
     {
         Dismiss();
         if(settingsWindow!=null) { settingsWindow.Activate(); return; }
-        settingsWindow=new(settings,next=> { settings=next; ThemeManager.Apply(next.Theme); }); settingsWindow.Closed+=(_,_)=>settingsWindow=null; settingsWindow.Show();
+        settingsWindow=new(settings,next=> {
+            settings=next;
+            ThemeManager.Apply(next.Theme);
+            resultWindow?.SetAutoCloseOnDeactivate(next.AutoCloseResultOnDeactivate);
+            resultWindow?.ApplyTypography(next);
+        });
+        settingsWindow.Closed+=(_,_)=>settingsWindow=null;
+        settingsWindow.Show();
     }
     void SystemThemeChanged(object? sender,Microsoft.Win32.UserPreferenceChangedEventArgs e)
     {

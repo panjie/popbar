@@ -1,0 +1,117 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style x:Key="ResultMarkdownStyle" TargetType="FlowDocument">
+        <Setter Property="FontFamily" Value="{DynamicResource ResultBodyFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource ResultBodySize}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="PagePadding" Value="16,7,12,12" />
+        <Setter Property="LineHeight" Value="{DynamicResource ResultLineHeight}" />
+        <Style.Resources>
+            <Style TargetType="Paragraph">
+                <Setter Property="Margin" Value="0,0,0,8" />
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="Heading1">
+                        <Setter Property="FontSize" Value="{DynamicResource ResultHeading1Size}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Margin" Value="0,12,0,6" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Heading2">
+                        <Setter Property="FontSize" Value="{DynamicResource ResultHeading2Size}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Margin" Value="0,10,0,5" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Heading3">
+                        <Setter Property="FontSize" Value="{DynamicResource ResultHeading3Size}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Margin" Value="0,8,0,4" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Heading4">
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Margin" Value="0,8,0,4" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Heading5">
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Heading6">
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="CodeBlock">
+                        <Setter Property="FontFamily" Value="{DynamicResource ResultCodeFont}" />
+                        <Setter Property="FontSize" Value="{DynamicResource ResultCodeSize}" />
+                        <Setter Property="Background" Value="{DynamicResource SecondarySurfaceBrush}" />
+                        <Setter Property="Padding" Value="10,7" />
+                        <Setter Property="Margin" Value="0,4,0,10" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Note">
+                        <Setter Property="Background" Value="{DynamicResource SecondarySurfaceBrush}" />
+                        <Setter Property="Padding" Value="10,6" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style TargetType="List">
+                <Setter Property="Margin" Value="0,0,0,6" />
+                <Setter Property="Padding" Value="22,0,0,0" />
+                <Setter Property="MarkerOffset" Value="4" />
+            </Style>
+            <Style TargetType="ListItem">
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="Padding" Value="0" />
+                <Style.Resources>
+                    <Style TargetType="Paragraph" BasedOn="{StaticResource {x:Type Paragraph}}">
+                        <Setter Property="Margin" Value="0,0,0,3" />
+                    </Style>
+                </Style.Resources>
+            </Style>
+            <Style TargetType="Section">
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="Blockquote">
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        <Setter Property="BorderThickness" Value="2,0,0,0" />
+                        <Setter Property="Padding" Value="10,2,0,0" />
+                        <Setter Property="Margin" Value="0,4,0,8" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style TargetType="Run">
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="CodeSpan">
+                        <Setter Property="FontFamily" Value="{DynamicResource ResultCodeFont}" />
+                        <Setter Property="Background" Value="{DynamicResource SecondarySurfaceBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style TargetType="Hyperlink">
+                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                <Setter Property="TextDecorations" Value="Underline" />
+            </Style>
+            <Style TargetType="Separator">
+                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="Margin" Value="0,6" />
+            </Style>
+            <Style TargetType="Table">
+                <Setter Property="Margin" Value="0,4,0,10" />
+                <Setter Property="CellSpacing" Value="0" />
+                <Setter Property="BorderThickness" Value="1,1,0,0" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            </Style>
+            <Style TargetType="TableRowGroup">
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="TableHeader">
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Background" Value="{DynamicResource SecondarySurfaceBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style TargetType="TableCell">
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="BorderThickness" Value="0,0,1,1" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Style.Resources>
+                    <Style TargetType="Paragraph" BasedOn="{StaticResource {x:Type Paragraph}}">
+                        <Setter Property="Margin" Value="0" />
+                    </Style>
+                </Style.Resources>
+            </Style>
+        </Style.Resources>
+    </Style>
+</ResourceDictionary>
