@@ -39,9 +39,9 @@ internal static class Native
     internal static bool ModifiersDown => Down(0x10)||Down(0x11)||Down(0x12)||Down(0x5B)||Down(0x5C);
     internal static void Shortcut(ushort key)
     {
-        if (ModifiersDown) throw new InvalidOperationException("请松开 Ctrl / Shift / Alt / Win 后重试。");
+        if (ModifiersDown) throw new InvalidOperationException(T("ReleaseModifiers"));
         Input Make(ushort k,bool up) => new() { Type=1,U=new() { Key=new() { Vk=k, Flags=up?2u:0u } } };
         var inputs=new[] { Make(0x11,false),Make(key,false),Make(key,true),Make(0x11,true) };
-        if(SendInput(4,inputs,Marshal.SizeOf<Input>())!=4) throw new Win32Exception("无法向目标应用发送快捷键（请检查权限）。");
+        if(SendInput(4,inputs,Marshal.SizeOf<Input>())!=4) throw new Win32Exception(T("SendShortcutFailed"));
     }
 }

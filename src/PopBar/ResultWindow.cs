@@ -10,8 +10,10 @@ internal sealed class ResultWindow:Window
 {
     readonly MarkdownScrollViewer output=new();
     readonly StringBuilder markdown=new();
-    readonly TextBlock status=new() { Text="准备请求…",FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis,VerticalAlignment=VerticalAlignment.Center };
-    readonly Button retry,stop,replace;
+    readonly TextBlock status=new() { FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis,VerticalAlignment=VerticalAlignment.Center };
+    readonly TextBlock metadata;
+    readonly Button retry,stop,replace,copy;
+    string? statusKey="PreparingRequest";
     readonly DispatcherTimer autoCloseTimer=new() { Interval=TimeSpan.FromSeconds(5) };
     bool autoCloseOnDeactivate;
     CancellationTokenSource? pending;
@@ -23,7 +25,6 @@ internal sealed class ResultWindow:Window
     {
         this.settings=settings; this.prompt=prompt; this.selection=selection;
         autoCloseOnDeactivate=settings.AutoCloseResultOnDeactivate;
-        Title=$"PopBar · {prompt.Name}";
         Width=560; Height=440; MinWidth=360; MinHeight=240;
         WindowStyle=WindowStyle.ToolWindow;
         ShowInTaskbar=false;
@@ -35,8 +36,8 @@ internal sealed class ResultWindow:Window
         root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         Content=root;
 
-        var metadata=new TextBlock {
-            Text=$"{settings.Model}  ·  已选 {selection.Text.Length:N0} 字符",FontSize=11,
+        metadata=new TextBlock {
+            FontSize=11,
             Margin=new Thickness(16,8,16,3),TextTrimming=TextTrimming.CharacterEllipsis
         };
         metadata.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush");
@@ -73,23 +74,24 @@ internal sealed class ResultWindow:Window
             buttons.Children.Add(button);
             return button;
         }
-        stop=ActionButton("StopButton","停止",()=>pending?.Cancel(),"DangerButtonStyle");
-        retry=ActionButton("RetryButton","重试",()=>_=Run());
-        ActionButton("CopyResultButton","复制",()=> {
-            status.Text=Actions.Copy(PlainResult())?"已复制到剪贴板。":"剪贴板正忙，请重试。";
+        stop=ActionButton("StopButton","",()=>pending?.Cancel(),"DangerButtonStyle");
+        retry=ActionButton("RetryButton","",()=>_=Run());
+        copy=ActionButton("CopyResultButton","",()=> {
+            SetStatus(Actions.Copy(PlainResult())?"Copied":"ClipboardBusy");
         });
-        replace=ActionButton("ReplaceButton","替换原文",async ()=> {
+        replace=ActionButton("ReplaceButton","",async ()=> {
             replace!.IsEnabled=false;
             try {
                 var replaced=await Actions.Replace(selection,PlainResult());
                 if(closed) return;
                 if(replaced) { Close(); return; }
-                status.Text="原选区已改变或无法确认可编辑，请复制后手动粘贴。";
+                SetStatus("CannotVerifySelection");
             }
-            catch { status.Text="无法替换，请复制后手动粘贴。"; }
+            catch { SetStatus("ReplaceFailed"); }
         },"PrimaryButtonStyle");
         replace.IsEnabled=false;
         replace.Visibility=stop.Visibility=Visibility.Collapsed;
+        RefreshLanguage();
 
         Activated+=(_,_)=>autoCloseTimer.Stop();
         Deactivated+=(_,_)=> { if(autoCloseOnDeactivate && !closed) autoCloseTimer.Start(); };
@@ -104,6 +106,24 @@ internal sealed class ResultWindow:Window
             pending?.Cancel();
         };
         PreviewKeyDown+=(_,e)=> { if(e.Key==System.Windows.Input.Key.Escape) Close(); };
+    }
+    internal void RefreshLanguage()
+    {
+        BuiltInPrompts.LocalizeName(prompt);
+        Language=UiText.MarkupLanguage;
+        Title=$"PopBar · {prompt.Name}";
+        var selected=T("SelectedCharacterCount",selection.Text.Length);
+        metadata.Text=string.IsNullOrWhiteSpace(settings.Model)?selected:$"{settings.Model}  ·  {selected}";
+        stop.Content=T("Stop");
+        retry.Content=T("Retry");
+        copy.Content=T("Copy");
+        replace.Content=T("ReplaceOriginal");
+        if(statusKey!=null) status.Text=T(statusKey);
+    }
+    void SetStatus(string key)
+    {
+        statusKey=key;
+        status.Text=T(key);
     }
     internal void ApplyTypography(Settings preferences)
     {
@@ -135,23 +155,31 @@ internal sealed class ResultWindow:Window
         markdown.Clear(); renderedLength=0; nextRender=0; Display("");
         retry.Visibility=replace.Visibility=Visibility.Collapsed;
         stop.Visibility=Visibility.Visible;
-        status.Text="等待服务响应…";
+        SetStatus("WaitingForResponse");
         try {
             await AiClient.Stream(settings,prompt,selection.Text,chunk=> {
                 if(closed) return;
-                if(markdown.Length==0) status.Text="正在输出…";
+                if(markdown.Length==0) SetStatus("StreamingResult");
                 Append(chunk);
             },request.Token,onThinking:()=> {
-                if(!closed) status.Text="模型思考中…";
+                if(!closed) SetStatus("ModelThinking");
             });
             if(!closed) {
                 Render(true);
-                status.Text="已完成";
+                SetStatus("RequestComplete");
                 replace.IsEnabled=selection.Editable;
                 replace.Visibility=selection.Editable?Visibility.Visible:Visibility.Collapsed;
             }
-        } catch(OperationCanceledException) { if(!closed) { Render(true); status.Text="已停止或超时 · 部分结果未完成，可手动复制。"; } }
-        catch(Exception ex) { if(!closed) { Render(true); status.Text=ex is InvalidOperationException or InvalidDataException ? ex.Message : "请求失败，请检查网络和接口设置。"; } }
+        } catch(OperationCanceledException) { if(!closed) { Render(true); SetStatus("RequestStopped"); } }
+        catch(Exception ex) {
+            if(!closed) {
+                Render(true);
+                if(ex is InvalidOperationException or InvalidDataException) {
+                    statusKey=null;
+                    status.Text=ex.Message;
+                } else SetStatus("RequestFailed");
+            }
+        }
         finally {
             pending=null;
             if(!closed) {

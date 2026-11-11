@@ -24,7 +24,7 @@ internal sealed class InputMonitor:IDisposable
         mouseProc=Mouse; keyProc=Key;
         mouseHook=Native.SetWindowsHookEx(14,mouseProc,Native.GetModuleHandle(null),0);
         keyHook=Native.SetWindowsHookEx(13,keyProc,Native.GetModuleHandle(null),0);
-        if(mouseHook==0||keyHook==0) { Dispose(); throw new InvalidOperationException("无法启动全局输入监听。"); }
+        if(mouseHook==0||keyHook==0) { Dispose(); throw new InvalidOperationException(T("InputHookFailed")); }
     }
     nint Mouse(int code,nint w,nint l)
     {

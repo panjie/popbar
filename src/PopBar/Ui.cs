@@ -8,6 +8,7 @@ internal static class Ui
         window.SetResourceReference(Window.ForegroundProperty,"TextBrush");
         window.FontFamily=new FontFamily("Segoe UI Variable, Segoe UI, Microsoft YaHei UI");
         window.FontSize=13;
+        window.Language=UiText.MarkupLanguage;
         window.Icon=System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/PopBar;component/Assets/PopBar.ico"));
         window.SourceInitialized+=(_,_)=>ThemeManager.ApplyTitleBar(window);
     }

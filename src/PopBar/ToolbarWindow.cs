@@ -19,7 +19,7 @@ internal sealed class ToolbarWindow:Window
     }
     internal ToolbarWindow()
     {
-        Title="PopBar · 划词工具条"; WindowStyle=WindowStyle.None; ResizeMode=ResizeMode.NoResize;
+        RefreshLanguage(); WindowStyle=WindowStyle.None; ResizeMode=ResizeMode.NoResize;
         ShowInTaskbar=false; ShowActivated=false; Topmost=true; SizeToContent=SizeToContent.WidthAndHeight;
         AllowsTransparency=true; Background=Brushes.Transparent; Ui.Style(this); Background=Brushes.Transparent;
         surface=new Border { CornerRadius=new CornerRadius(8),BorderThickness=new Thickness(1),Padding=new Thickness(3),Margin=new Thickness(6),Child=buttons,Effect=new System.Windows.Media.Effects.DropShadowEffect { BlurRadius=12,ShadowDepth=2,Opacity=0.25,Direction=270,Color=Colors.Black } };
@@ -29,6 +29,11 @@ internal sealed class ToolbarWindow:Window
         surface.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush");
         surface.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
         Content=surface;
+    }
+    internal void RefreshLanguage()
+    {
+        Title=T("ToolbarTitle");
+        Language=UiText.MarkupLanguage;
     }
     void Fade(double target)
     {
@@ -49,29 +54,29 @@ internal sealed class ToolbarWindow:Window
             if(prompt!=null && prompt.IconKind!=PromptIconKind.Default) button.Content=new Viewbox { Width=18,Height=18,Stretch=Stretch.Uniform,Child=PromptIcons.Create(prompt,out _) };
             button.Focusable=false; buttons.Children.Add(button);
         }
-        Add("\uE8C8","复制",()=> { if(!Actions.Copy(selection.Text)) notify("剪贴板正忙，请重试。"); });
+        Add("\uE8C8",T("Copy"),()=> { if(!Actions.Copy(selection.Text)) notify(T("ClipboardBusy")); });
         if(selection.Editable) {
-            Add("\uE8C6","剪切",async ()=> {
-                try { var current=await SelectionReader.Validate(selection); if(current?.Editable==true && Native.GetForegroundWindow()==selection.Window) Native.Shortcut(0x58); else notify("选区已改变，请重新选择。"); }
+            Add("\uE8C6",T("Cut"),async ()=> {
+                try { var current=await SelectionReader.Validate(selection); if(current?.Editable==true && Native.GetForegroundWindow()==selection.Window) Native.Shortcut(0x58); else notify(T("SelectionChanged")); }
                 catch(Exception ex) { notify(ex.Message); }
             });
-            Add("\uE77F","粘贴",async ()=> {
-                try { var current=await SelectionReader.Validate(selection); if(current?.Editable==true && Native.GetForegroundWindow()==selection.Window) Native.Shortcut(0x56); else notify("选区已改变，请重新选择。"); }
+            Add("\uE77F",T("Paste"),async ()=> {
+                try { var current=await SelectionReader.Validate(selection); if(current?.Editable==true && Native.GetForegroundWindow()==selection.Window) Native.Shortcut(0x56); else notify(T("SelectionChanged")); }
                 catch(Exception ex) { notify(ex.Message); }
             });
         }
         Separator();
         var link=Actions.Link(selection.Text);
-        if(link!=null) Add("\uE8A7","打开链接",()=>Actions.Open(link));
-        else if(selection.Text.Length<=4000) Add("\uE721","搜索",()=>Actions.Open(Actions.SearchUri(settings.SearchUrl,selection.Text)));
-        var path=Actions.ExistingPath(selection.Text); if(path!=null) Add("\uE8B7","文件位置",()=>Actions.Reveal(path));
+        if(link!=null) Add("\uE8A7",T("OpenLink"),()=>Actions.Open(link));
+        else if(selection.Text.Length<=4000) Add("\uE721",T("Search"),()=>Actions.Open(Actions.SearchUri(settings.SearchUrl,selection.Text)));
+        var path=Actions.ExistingPath(selection.Text); if(path!=null) Add("\uE8B7",T("FileLocation"),()=>Actions.Reveal(path));
         Separator();
         foreach(var action in settings.Prompts.Take(12)) {
-            var glyph=action.Name switch { "翻译"=>"\uE774","解释"=>"\uE946","润色"=>"\uE70F",_=>"\uE73E" };
+            var glyph=BuiltInPrompts.DefaultGlyph(action.Name);
             Add(glyph,action.Name,()=>ai(action),action);
         }
         Separator();
-        Add("\uE713","设置",configure);
+        Add("\uE713",T("Settings"),configure);
         var screen=System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(point.X,point.Y)).WorkingArea;
         buttons.MaxWidth=Math.Min(850,screen.Width*0.75);
         // Position using physical pixels after WPF has measured the monitor-specific DPI.

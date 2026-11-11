@@ -171,6 +171,11 @@
             </Style>
 
             <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
+                <Setter Property="ContentTemplate">
+                    <Setter.Value>
+                        <DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate>
+                    </Setter.Value>
+                </Setter>
                 <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                 <Setter Property="Margin" Value="0,6" />
@@ -228,7 +233,8 @@
                     <Path Data="M 2,2 h 0.2 M 6,2 h 0.2 M 2,6 h 0.2 M 6,6 h 0.2 M 2,10 h 0.2 M 6,10 h 0.2"
                           Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="2"
                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" Cursor="SizeAll"
-                          Margin="0,0,8,0" VerticalAlignment="Center" ToolTip="拖动调整顺序" />
+                          Margin="0,0,8,0" VerticalAlignment="Center"
+                          ToolTip="{Binding Tag, RelativeSource={RelativeSource AncestorType=ListBox}}" />
                     <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                 </DockPanel>
             </DataTemplate>

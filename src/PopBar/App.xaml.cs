@@ -11,6 +11,7 @@ public partial class App:Application
     InputMonitor? input;
     System.Windows.Forms.NotifyIcon? tray;
     System.Drawing.Icon? trayIcon;
+    System.Windows.Forms.ToolStripItem? traySettings, trayPause, trayExit;
     ToolbarWindow toolbar=null!;
     Settings settings=new();
     SettingsWindow? settingsWindow;
@@ -26,33 +27,40 @@ public partial class App:Application
         var launchedAtLogin=e.Args.Contains(StartupRegistration.LaunchArgument);
         instance=new Mutex(true,"Local\\PopBar.Personal",out var created);
         if(!created) {
-            if(!launchedAtLogin) MessageBox.Show("PopBar 已在运行，请在系统托盘中打开设置。","PopBar");
+            if(!launchedAtLogin) {
+                try { UiText.Apply(Settings.Load().Language); } catch { }
+                MessageBox.Show(T("AlreadyRunning"),"PopBar");
+            }
             Shutdown();
             return;
         }
         try {
             bool first=!File.Exists(Settings.FilePath);
-            try { settings=Settings.Load(); } catch { MessageBox.Show("设置文件无法读取，将使用默认设置。原文件不会自动覆盖。","PopBar"); }
+            try { settings=Settings.Load(); } catch { MessageBox.Show(T("SettingsLoadFailed"),"PopBar"); }
+            UiText.Apply(settings.Language);
+            LocalizeBuiltInPromptNames();
             ThemeManager.Apply(settings.Theme);
-            Microsoft.Win32.SystemEvents.UserPreferenceChanged+=SystemThemeChanged;
+            Microsoft.Win32.SystemEvents.UserPreferenceChanged+=SystemPreferenceChanged;
             toolbar=new(); input=new();
             using(var iconStream=Application.GetResourceStream(new Uri("pack://application:,,,/PopBar;component/Assets/PopBar.ico")).Stream)
             using(var icon=new System.Drawing.Icon(iconStream,32,32)) trayIcon=(System.Drawing.Icon)icon.Clone();
-            tray=new System.Windows.Forms.NotifyIcon { Icon=trayIcon,Text="PopBar · 划词工具条",Visible=true };
+            tray=new System.Windows.Forms.NotifyIcon { Icon=trayIcon,Text=T("ToolbarTitle"),Visible=true };
             var menu=new System.Windows.Forms.ContextMenuStrip();
-            var pause=new System.Windows.Forms.ToolStripMenuItem("暂停自动划词") { Checked=!settings.Enabled };
-            pause.Click+=(_,_)=> { settings.Enabled=!settings.Enabled; pause.Checked=!settings.Enabled; Dismiss(); try { settings.Save(); } catch { Notify("设置保存失败。"); } };
-            menu.Items.Add("设置…",null,(_,_)=>Configure()); menu.Items.Add(pause);
-            menu.Items.Add("退出",null,(_,_)=>Shutdown()); menu.Opening+=(_,_)=>pause.Checked=!settings.Enabled;
+            var pause=new System.Windows.Forms.ToolStripMenuItem(T("PauseSelection")) { Checked=!settings.Enabled };
+            pause.Click+=(_,_)=> { settings.Enabled=!settings.Enabled; pause.Checked=!settings.Enabled; Dismiss(); try { settings.Save(); } catch { Notify(T("SettingsSaveFailed")); } };
+            traySettings=menu.Items.Add(T("TraySettings"),null,(_,_)=>Configure());
+            trayPause=pause; menu.Items.Add(pause);
+            trayExit=menu.Items.Add(T("Exit"),null,(_,_)=>Shutdown());
+            menu.Opening+=(_,_)=> { ApplyLanguage(); pause.Checked=!settings.Enabled; };
             tray.ContextMenuStrip=menu; tray.DoubleClick+=(_,_)=>Configure();
             input.Dismiss+=()=>Dispatcher.BeginInvoke(Dismiss);
             input.Selected+=(window,point,shift,manual)=>Dispatcher.BeginInvoke(()=>_=Capture(window,point,shift,manual));
             input.Hotkey+=()=> { var window=Native.GetForegroundWindow(); Native.GetCursorPos(out var point); Dispatcher.BeginInvoke(()=>_=Capture(window,point,false,true)); };
             timer=new DispatcherTimer { Interval=TimeSpan.FromMilliseconds(180) };
             timer.Tick+=(_,_)=> { if(toolbar.IsVisible && Native.GetForegroundWindow()!=selectionWindow) Dismiss(); }; timer.Start();
-            if(!input.HotkeyRegistered) Notify("Ctrl + Alt + Space 已被占用；自动划词仍可用。");
+            if(!input.HotkeyRegistered) Notify(T("HotkeyUnavailable"));
             if((first && !launchedAtLogin) || e.Args.Contains("--settings")) Configure();
-        } catch(Exception ex) { MessageBox.Show(ex.Message,"PopBar 启动失败"); Shutdown(1); }
+        } catch(Exception ex) { MessageBox.Show(ex.Message,T("AppStartupFailed")); Shutdown(1); }
     }
     void Dismiss() { generation++; toolbar?.Hide(); }
     static bool Terminal(string name) => new[]{"WindowsTerminal","OpenConsole","cmd","powershell","pwsh","mintty","wezterm-gui","alacritty"}.Contains(name,StringComparer.OrdinalIgnoreCase);
@@ -74,7 +82,7 @@ public partial class App:Application
             }
             if(selection==null && manual && !Terminal(process) && generation==version && Native.GetForegroundWindow()==window) selection=await CopyFallback(window);
             if(generation!=version || Native.GetForegroundWindow()!=window) return;
-            if(selection==null) { if(manual) Notify(Terminal(process)?"终端未公开可读取的选区。请用鼠标选中文字后重试；为避免中断命令，不会发送 Ctrl+C。":"未读取到文字。请确认已选中文字，或检查该应用的辅助功能支持。"); return; }
+            if(selection==null) { if(manual) Notify(Terminal(process)?T("TerminalSelectionMissing"):T("SelectionMissing")); return; }
             if(Terminal(process)) selection=selection with { Editable=false };
             selectionWindow=window;
             toolbar.Present(selection,point,settings,Configure,prompt=> {
@@ -85,7 +93,7 @@ public partial class App:Application
                 preview.Closed+=(_,_)=> { if(resultWindow==preview) resultWindow=null; };
                 WindowPresentation.ShowForeground(preview);
             },Notify);
-        } catch { if(manual) Notify("无法读取选区，请重试。"); }
+        } catch { if(manual) Notify(T("SelectionReadFailed")); }
         finally { probing=false; }
     }
     static async Task<Selection?> CopyFallback(nint window)
@@ -127,8 +135,11 @@ public partial class App:Application
     {
         Dismiss();
         if(settingsWindow!=null) { settingsWindow.Activate(); return; }
+        ApplyLanguage();
         settingsWindow=new(settings,next=> {
             settings=next;
+            ApplyLanguage();
+            LocalizeBuiltInPromptNames();
             ThemeManager.Apply(next.Theme);
             resultWindow?.SetAutoCloseOnDeactivate(next.AutoCloseResultOnDeactivate);
             resultWindow?.ApplyTypography(next);
@@ -136,15 +147,34 @@ public partial class App:Application
         settingsWindow.Closed+=(_,_)=>settingsWindow=null;
         settingsWindow.Show();
     }
-    void SystemThemeChanged(object? sender,Microsoft.Win32.UserPreferenceChangedEventArgs e)
+    void LocalizeBuiltInPromptNames()
     {
-        if(settings.Theme!=AppTheme.System) return;
-        Dispatcher.BeginInvoke(()=> { if(settings.Theme==AppTheme.System) ThemeManager.Apply(AppTheme.System); });
+        foreach(var prompt in settings.Prompts) BuiltInPrompts.LocalizeName(prompt);
+    }
+    void ApplyLanguage()
+    {
+        if(!UiText.Apply(settings.Language)) return;
+        Dismiss();
+        LocalizeBuiltInPromptNames();
+        if(tray!=null) tray.Text=T("ToolbarTitle");
+        if(traySettings!=null) traySettings.Text=T("TraySettings");
+        if(trayPause!=null) trayPause.Text=T("PauseSelection");
+        if(trayExit!=null) trayExit.Text=T("Exit");
+        toolbar?.RefreshLanguage();
+        resultWindow?.RefreshLanguage();
+    }
+    void SystemPreferenceChanged(object? sender,Microsoft.Win32.UserPreferenceChangedEventArgs e)
+    {
+        if(settings.Theme!=AppTheme.System && settings.Language!=UiLanguage.System) return;
+        Dispatcher.BeginInvoke(()=> {
+            if(settings.Theme==AppTheme.System) ThemeManager.Apply(AppTheme.System);
+            if(settings.Language==UiLanguage.System) ApplyLanguage();
+        });
     }
     void Notify(string text) { if(tray!=null) tray.ShowBalloonTip(3500,"PopBar",text,System.Windows.Forms.ToolTipIcon.Info); }
     protected override void OnExit(ExitEventArgs e)
     {
-        Microsoft.Win32.SystemEvents.UserPreferenceChanged-=SystemThemeChanged;
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged-=SystemPreferenceChanged;
         timer?.Stop(); input?.Dispose(); resultWindow?.Close(); toolbar?.Close(); tray?.Dispose(); trayIcon?.Dispose(); instance?.Dispose(); base.OnExit(e);
     }
 }

@@ -42,7 +42,7 @@ internal static class ThemeManager
     }
     internal static void Apply(AppTheme preference)
     {
-        var app=Application.Current ?? throw new InvalidOperationException("应用程序尚未初始化。");
+        var app=Application.Current ?? throw new InvalidOperationException(T("ApplicationNotInitialized"));
         var resolved=Resolve(preference,SystemUsesLightTheme());
         var source=new Uri($"/PopBar;component/Themes/{resolved}.xaml",UriKind.Relative);
         var dictionaries=app.Resources.MergedDictionaries;

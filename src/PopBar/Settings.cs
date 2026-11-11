@@ -10,7 +10,7 @@ public enum ToolbarPlacement { Above, Below }
 public enum PromptIconKind { Default, Emoji, NerdFont }
 public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged
 {
-    string name="新操作";
+    string name=T("NewPromptName");
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     public string Name {
         get=>name;
@@ -20,7 +20,7 @@ public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged
             PropertyChanged?.Invoke(this,new System.ComponentModel.PropertyChangedEventArgs(nameof(Name)));
         }
     }
-    public string Prompt { get; set; } = "请处理以下文字：\n{{text}}";
+    public string Prompt { get; set; } = T("NewPromptTemplate");
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public PromptIconKind IconKind { get; set; }
     public string Icon { get; set; } = "";
@@ -29,6 +29,8 @@ public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged
 }
 public sealed class Settings
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public UiLanguage Language { get; set; } = UiLanguage.System;
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public AppTheme Theme { get; set; } = AppTheme.System;
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -44,17 +46,13 @@ public sealed class Settings
     public string Model { get; set; } = "";
     public bool DeepSeekFlashThinking { get; set; }
     public string EncryptedKey { get; set; } = "";
-    public List<PromptAction> Prompts { get; set; } = new() {
-        new() { Name="翻译",Prompt="将以下文字翻译成简体中文，仅返回译文：\n{{text}}" },
-        new() { Name="解释",Prompt="用中文清晰解释以下文字或代码：\n{{text}}" },
-        new() { Name="润色",Prompt="润色以下文字，保留原意和原语言，仅返回润色结果：\n{{text}}" }
-    };
+    public List<PromptAction> Prompts { get; set; } = BuiltInPrompts.Create();
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"PopBar");
     public static string FilePath => Path.Combine(Folder,"settings.json");
     public static Settings Load()
     {
         if(!File.Exists(FilePath)) return new();
-        var s=JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? throw new InvalidDataException("设置文件为空。");
+        var s=JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? throw new InvalidDataException(T("EmptySettings"));
         s.Prompts ??= new(); return s;
     }
     public void Save()

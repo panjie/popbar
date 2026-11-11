@@ -1,0 +1,447 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="Above" xml:space="preserve">
+    <value>上</value>
+  </data>
+  <data name="AddPrompt" xml:space="preserve">
+    <value>＋ プロンプトを追加</value>
+  </data>
+  <data name="AiPrivacy" xml:space="preserve">
+    <value>AI ボタンを押したときだけ、選択したテキストを送信します。OpenAI 互換の Chat Completions API に対応しています。</value>
+  </data>
+  <data name="AiResultWindow" xml:space="preserve">
+    <value>AI 結果ウィンドウ</value>
+  </data>
+  <data name="AiService" xml:space="preserve">
+    <value>AI サービス</value>
+  </data>
+  <data name="AiServiceDescription" xml:space="preserve">
+    <value>OpenAI 互換の Chat Completions API に接続します。</value>
+  </data>
+  <data name="AlreadyRunning" xml:space="preserve">
+    <value>PopBar はすでに実行中です。通知領域から設定を開いてください。</value>
+  </data>
+  <data name="ApiBaseUrl" xml:space="preserve">
+    <value>API ベース URL</value>
+  </data>
+  <data name="ApiBaseUrlHelp" xml:space="preserve">
+    <value>例 https://api.deepseek.com/v1。末尾の /chat/completions は不要です。リモートサービスには HTTPS が必要です。</value>
+  </data>
+  <data name="ApiKey" xml:space="preserve">
+    <value>API キー</value>
+  </data>
+  <data name="ApiKeyHelp" xml:space="preserve">
+    <value>空欄のままにすると保存済みのキーを使用します。キーは Windows DPAPI で現在のユーザー用に暗号化されます。</value>
+  </data>
+  <data name="AppStartupFailed" xml:space="preserve">
+    <value>PopBar を起動できませんでした</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>外観</value>
+  </data>
+  <data name="ApplicationNotInitialized" xml:space="preserve">
+    <value>アプリがまだ初期化されていません。</value>
+  </data>
+  <data name="Authentication" xml:space="preserve">
+    <value>認証</value>
+  </data>
+  <data name="AutoCloseResult" xml:space="preserve">
+    <value>フォーカスを失ってから 5 秒後に閉じる</value>
+  </data>
+  <data name="AutoShowToolbar" xml:space="preserve">
+    <value>マウスでテキストを選択すると自動表示</value>
+  </data>
+  <data name="AutomaticFont" xml:space="preserve">
+    <value>自動選択</value>
+  </data>
+  <data name="Below" xml:space="preserve">
+    <value>下</value>
+  </data>
+  <data name="ButtonName" xml:space="preserve">
+    <value>ボタン名</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="CannotVerifySelection" xml:space="preserve">
+    <value>選択範囲が変わったか、編集可能か確認できませんでした。コピーして手動で貼り付けてください。</value>
+  </data>
+  <data name="ChooseIcon" xml:space="preserve">
+    <value>アイコンを選択…</value>
+  </data>
+  <data name="ClearSavedApiKey" xml:space="preserve">
+    <value>保存済みのキーを削除する（キー不要のローカルサービス向け）</value>
+  </data>
+  <data name="ClipboardBusy" xml:space="preserve">
+    <value>クリップボードを使用できません。もう一度お試しください。</value>
+  </data>
+  <data name="Copied" xml:space="preserve">
+    <value>クリップボードにコピーしました。</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
+  <data name="Cut" xml:space="preserve">
+    <value>切り取り</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>ダーク</value>
+  </data>
+  <data name="DeepSeekThinking" xml:space="preserve">
+    <value>DeepSeek Flash の思考モードを有効にする</value>
+  </data>
+  <data name="DeepSeekThinkingHelp" xml:space="preserve">
+    <value>オフにすると、通常は回答の表示が早くなります。</value>
+  </data>
+  <data name="DefaultFont" xml:space="preserve">
+    <value>既定のフォント</value>
+  </data>
+  <data name="DefaultIcon" xml:space="preserve">
+    <value>既定のアイコン</value>
+  </data>
+  <data name="DeletePrompt" xml:space="preserve">
+    <value>プロンプトを削除</value>
+  </data>
+  <data name="DragToReorder" xml:space="preserve">
+    <value>ドラッグして並べ替え</value>
+  </data>
+  <data name="EmojiHint" xml:space="preserve">
+    <value>絵文字を貼り付けるか、Win + . で入力します。</value>
+  </data>
+  <data name="EmptySettings" xml:space="preserve">
+    <value>設定ファイルが空です。</value>
+  </data>
+  <data name="EndpointInvalid" xml:space="preserve">
+    <value>API URL には HTTPS を使用してください（ローカルでは HTTP も可）。認証情報、クエリ、# は含めないでください。</value>
+  </data>
+  <data name="EndpointSettings" xml:space="preserve">
+    <value>接続設定</value>
+  </data>
+  <data name="ExcludedProcesses" xml:space="preserve">
+    <value>除外するアプリのプロセス名</value>
+  </data>
+  <data name="ExcludedProcessesHelp" xml:space="preserve">
+    <value>カンマで区切り、.exe は省略します。パスワード管理アプリは既定で除外されます。</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>終了</value>
+  </data>
+  <data name="ExplainPrompt" xml:space="preserve">
+    <value>解説</value>
+  </data>
+  <data name="FileLocation" xml:space="preserve">
+    <value>ファイルの場所</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>フォント</value>
+  </data>
+  <data name="FontNotInstalled" xml:space="preserve">
+    <value>{0}（未インストール）</value>
+  </data>
+  <data name="FontPreview" xml:space="preserve">
+    <value>フォントプレビュー · 中文 · PopBar</value>
+  </data>
+  <data name="FontSize" xml:space="preserve">
+    <value>文字サイズ</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>一般</value>
+  </data>
+  <data name="GeneralDescription" xml:space="preserve">
+    <value>外観、テキスト選択時の動作、検索方法を設定します。</value>
+  </data>
+  <data name="HotkeyUnavailable" xml:space="preserve">
+    <value>Ctrl + Alt + Space は使用中です。選択時の自動表示は引き続き使えます。</value>
+  </data>
+  <data name="HttpRequestFailed" xml:space="preserve">
+    <value>API リクエストに失敗しました（HTTP {0}）。URL、モデル、キー、利用枠を確認してください。</value>
+  </data>
+  <data name="IconFontMissing" xml:space="preserve">
+    <value>フォントが見つかりません。JetBrainsMono NF をインストールして再起動してください。</value>
+  </data>
+  <data name="IconFontOptions" xml:space="preserve">
+    <value>フォントの設定</value>
+  </data>
+  <data name="IconMissing" xml:space="preserve">
+    <value>アイコンを選択してください。現在は既定のアイコンを表示しています。</value>
+  </data>
+  <data name="IconRequired" xml:space="preserve">
+    <value>カスタムアイコンには、絵文字か Nerd Font の文字または有効なコードポイントを 1 つ指定してください。</value>
+  </data>
+  <data name="IconUnsupported" xml:space="preserve">
+    <value>このフォントにはこのアイコンがありません。別のアイコンを選択してください。</value>
+  </data>
+  <data name="InputHookFailed" xml:space="preserve">
+    <value>グローバル入力の監視を開始できませんでした。</value>
+  </data>
+  <data name="LaunchAtLogin" xml:space="preserve">
+    <value>Windows へのサインイン時に PopBar を起動</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>ライト</value>
+  </data>
+  <data name="ManualShortcut" xml:space="preserve">
+    <value>手動で表示するには、テキストを選択して Ctrl + Alt + Space を押します。</value>
+  </data>
+  <data name="MissingPlaceholder" xml:space="preserve">
+    <value>{{text}} がない場合、選択したテキストをプロンプトの末尾に追加します。</value>
+  </data>
+  <data name="ModelContentFilter" xml:space="preserve">
+    <value>サービスが一部の内容をフィルタリングしたため、結果は途中までです。</value>
+  </data>
+  <data name="ModelId" xml:space="preserve">
+    <value>モデル ID</value>
+  </data>
+  <data name="ModelIdHelp" xml:space="preserve">
+    <value>プロバイダーやローカルサービスが指定するモデル ID を入力してください。</value>
+  </data>
+  <data name="ModelOutputLimit" xml:space="preserve">
+    <value>出力が長さの上限に達したため、結果は途中までです。</value>
+  </data>
+  <data name="ModelRequired" xml:space="preserve">
+    <value>設定でモデル ID を入力してください。</value>
+  </data>
+  <data name="ModelThinking" xml:space="preserve">
+    <value>モデルが思考中…</value>
+  </data>
+  <data name="NerdIconHint" xml:space="preserve">
+    <value>アイコンを貼り付けるか、右のボタンで選択します。</value>
+  </data>
+  <data name="NerdPickerNoFont" xml:space="preserve">
+    <value>JetBrainsMono Nerd Font が見つかりません。インストールして PopBar を再起動してください。</value>
+  </data>
+  <data name="NerdPickerResults" xml:space="preserve">
+    <value>{0} 個のアイコン · {1} / {2} ページ · クリックして選択</value>
+  </data>
+  <data name="NerdPickerSearch" xml:space="preserve">
+    <value>英語名（translate、code など）やコードポイントで検索するか、アイコンを貼り付けます。</value>
+  </data>
+  <data name="NerdPickerTitle" xml:space="preserve">
+    <value>Nerd Font アイコンを選択</value>
+  </data>
+  <data name="NewPromptName" xml:space="preserve">
+    <value>新しい操作</value>
+  </data>
+  <data name="NewPromptTemplate" xml:space="preserve">
+    <value>次のテキストを処理してください。
+{{text}}</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>次のページ</value>
+  </data>
+  <data name="NoMatchingIcons" xml:space="preserve">
+    <value>一致するアイコンがありません。検索語とフォントを確認してください。</value>
+  </data>
+  <data name="NoPrompts" xml:space="preserve">
+    <value>プロンプトがありません。
+「プロンプトを追加」を押して開始します。</value>
+  </data>
+  <data name="NoResponseText" xml:space="preserve">
+    <value>サービスからテキストが返りませんでした。モデルが Chat Completions に対応しているか確認してください。</value>
+  </data>
+  <data name="OpenLink" xml:space="preserve">
+    <value>リンクを開く</value>
+  </data>
+  <data name="Paste" xml:space="preserve">
+    <value>貼り付け</value>
+  </data>
+  <data name="PasteIconName" xml:space="preserve">
+    <value>アイコンを貼り付けるかコードポイントを入力</value>
+  </data>
+  <data name="PasteIconTooltip" xml:space="preserve">
+    <value>アイコンを 1 つ貼り付けるか、コードポイント（U+F121、\udb81\uddca など）を入力します。</value>
+  </data>
+  <data name="PauseSelection" xml:space="preserve">
+    <value>選択時の自動表示を一時停止</value>
+  </data>
+  <data name="PolishPrompt" xml:space="preserve">
+    <value>推敲</value>
+  </data>
+  <data name="PreparingRequest" xml:space="preserve">
+    <value>リクエストを準備中…</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>前のページ</value>
+  </data>
+  <data name="PromptBody" xml:space="preserve">
+    <value>プロンプト本文</value>
+  </data>
+  <data name="PromptRequired" xml:space="preserve">
+    <value>プロンプトの名前と本文を入力してください。</value>
+  </data>
+  <data name="Prompts" xml:space="preserve">
+    <value>プロンプト</value>
+  </data>
+  <data name="PromptsDescription" xml:space="preserve">
+    <value>ツールバーの AI 操作を最大 12 個設定できます。{{text}} は選択したテキストに置き換わります。</value>
+  </data>
+  <data name="ReleaseModifiers" xml:space="preserve">
+    <value>Ctrl / Shift / Alt / Win キーを離してから、もう一度お試しください。</value>
+  </data>
+  <data name="ReplaceFailed" xml:space="preserve">
+    <value>置換できませんでした。コピーして手動で貼り付けてください。</value>
+  </data>
+  <data name="ReplaceOriginal" xml:space="preserve">
+    <value>元のテキストを置換</value>
+  </data>
+  <data name="RequestComplete" xml:space="preserve">
+    <value>完了</value>
+  </data>
+  <data name="RequestFailed" xml:space="preserve">
+    <value>リクエストに失敗しました。ネットワークと API の設定を確認してください。</value>
+  </data>
+  <data name="RequestStopped" xml:space="preserve">
+    <value>停止またはタイムアウトしました。途中までの結果はコピーできます。</value>
+  </data>
+  <data name="ResponseEventTooLarge" xml:space="preserve">
+    <value>応答イベントが大きすぎます。</value>
+  </data>
+  <data name="ResponseInterrupted" xml:space="preserve">
+    <value>接続が途中で終了しました。結果が不完全な可能性があります。</value>
+  </data>
+  <data name="ResponseLineTooLarge" xml:space="preserve">
+    <value>応答の行が長すぎます。</value>
+  </data>
+  <data name="ResponseTooLarge" xml:space="preserve">
+    <value>応答が大きすぎるため停止しました。</value>
+  </data>
+  <data name="ResultTooLarge" xml:space="preserve">
+    <value>結果が 256K 文字を超えたため停止しました。</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>再試行</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>検索</value>
+  </data>
+  <data name="SearchAndExclusions" xml:space="preserve">
+    <value>検索と除外</value>
+  </data>
+  <data name="SearchHttpsRequired" xml:space="preserve">
+    <value>検索 URL には HTTPS を使用してください。</value>
+  </data>
+  <data name="SearchPlaceholderRequired" xml:space="preserve">
+    <value>検索 URL に {text} を含めてください。</value>
+  </data>
+  <data name="SearchUrl" xml:space="preserve">
+    <value>検索 URL</value>
+  </data>
+  <data name="SearchUrlHelp" xml:space="preserve">
+    <value>選択したテキストは {text} で指定します。例 https://www.bing.com/search?q={text}</value>
+  </data>
+  <data name="SelectedCharacterCount" xml:space="preserve">
+    <value>選択範囲 {0:N0} 文字</value>
+  </data>
+  <data name="SelectionBehavior" xml:space="preserve">
+    <value>テキスト選択時の動作</value>
+  </data>
+  <data name="SelectionChanged" xml:space="preserve">
+    <value>選択範囲が変わりました。もう一度選択してください。</value>
+  </data>
+  <data name="SelectionMissing" xml:space="preserve">
+    <value>テキストを取得できませんでした。選択範囲と、アプリのアクセシビリティ対応を確認してください。</value>
+  </data>
+  <data name="SelectionReadFailed" xml:space="preserve">
+    <value>選択範囲を読み取れませんでした。もう一度お試しください。</value>
+  </data>
+  <data name="SendShortcutFailed" xml:space="preserve">
+    <value>対象のアプリにショートカットを送信できませんでした。権限を確認してください。</value>
+  </data>
+  <data name="ServiceError" xml:space="preserve">
+    <value>サービスがエラーを返しました。途中までの結果を表示しています。</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>設定ファイルを読み込めませんでした。既定の設定を使用し、元のファイルはそのまま残します。</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>設定を保存できませんでした。</value>
+  </data>
+  <data name="SettingsSaveFailedTitle" xml:space="preserve">
+    <value>保存できませんでした</value>
+  </data>
+  <data name="SettingsWindowTitle" xml:space="preserve">
+    <value>PopBar · 設定</value>
+  </data>
+  <data name="Startup" xml:space="preserve">
+    <value>起動</value>
+  </data>
+  <data name="StartupPathTooLong" xml:space="preserve">
+    <value>PopBar.exe のパスが長すぎます。パスの短いフォルダーへ移動して、もう一度お試しください。</value>
+  </data>
+  <data name="StartupReadFailed" xml:space="preserve">
+    <value>Windows の自動起動設定を読み込めませんでした。</value>
+  </data>
+  <data name="StartupRequiresExecutable" xml:space="preserve">
+    <value>PopBar.exe を直接実行してから、自動起動を設定してください。</value>
+  </data>
+  <data name="StartupWriteFailed" xml:space="preserve">
+    <value>ほかの設定は保存されましたが、自動起動の設定を更新できませんでした。
+{0}</value>
+  </data>
+  <data name="StartupWriteFailedTitle" xml:space="preserve">
+    <value>自動起動を更新できませんでした</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="StreamingResult" xml:space="preserve">
+    <value>回答を受信中…</value>
+  </data>
+  <data name="SystemDefault" xml:space="preserve">
+    <value>システムに従う</value>
+  </data>
+  <data name="Tagline" xml:space="preserve">
+    <value>選択したテキストをすぐに活用</value>
+  </data>
+  <data name="TerminalSelectionMissing" xml:space="preserve">
+    <value>ターミナルから選択範囲を取得できませんでした。マウスで選択し直してください。コマンドを中断しないよう Ctrl+C は送信しません。</value>
+  </data>
+  <data name="TerminalShift" xml:space="preserve">
+    <value>ターミナルでは Shift を押しながら選択したときだけ表示</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>テーマ</value>
+  </data>
+  <data name="ThemeHelp" xml:space="preserve">
+    <value>Windows のアプリテーマに合わせて自動で切り替わります。</value>
+  </data>
+  <data name="ToolbarIcon" xml:space="preserve">
+    <value>ツールバーのアイコン</value>
+  </data>
+  <data name="ToolbarIconPreview" xml:space="preserve">
+    <value>ツールバーでの表示プレビュー</value>
+  </data>
+  <data name="ToolbarPosition" xml:space="preserve">
+    <value>ツールバーの表示位置</value>
+  </data>
+  <data name="ToolbarPositionHelp" xml:space="preserve">
+    <value>選択終了時のポインターを基準に表示します。画面の端では反対側に表示します。</value>
+  </data>
+  <data name="ToolbarTitle" xml:space="preserve">
+    <value>PopBar · 選択ツールバー</value>
+  </data>
+  <data name="TranslatePrompt" xml:space="preserve">
+    <value>翻訳</value>
+  </data>
+  <data name="TraySettings" xml:space="preserve">
+    <value>設定…</value>
+  </data>
+  <data name="UiLanguage" xml:space="preserve">
+    <value>表示言語</value>
+  </data>
+  <data name="WaitingForResponse" xml:space="preserve">
+    <value>応答を待機中…</value>
+  </data>
+</root>

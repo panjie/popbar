@@ -6,8 +6,8 @@ public static class Actions
 {
     public static Uri SearchUri(string template,string text)
     {
-        if(!template.Contains("{text}",StringComparison.Ordinal)) throw new InvalidOperationException("搜索地址必须包含 {text}。");
-        if(!Uri.TryCreate(template.Replace("{text}",Uri.EscapeDataString(text),StringComparison.Ordinal),UriKind.Absolute,out var u) || u.Scheme!="https" || u.UserInfo.Length>0) throw new InvalidOperationException("搜索地址必须为 HTTPS。");
+        if(!template.Contains("{text}",StringComparison.Ordinal)) throw new InvalidOperationException(T("SearchPlaceholderRequired"));
+        if(!Uri.TryCreate(template.Replace("{text}",Uri.EscapeDataString(text),StringComparison.Ordinal),UriKind.Absolute,out var u) || u.Scheme!="https" || u.UserInfo.Length>0) throw new InvalidOperationException(T("SearchHttpsRequired"));
         return u;
     }
     public static Uri? Link(string text)

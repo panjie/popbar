@@ -41,21 +41,20 @@ internal static class PromptIcons
 
     internal static TextBlock Create(PromptAction action,out string warning)
     {
-        var fallback=action.Name switch { "翻译"=>"\uE774","解释"=>"\uE946","润色"=>"\uE70F",_=>"\uE73E" };
-        var text=fallback;
+        var text=BuiltInPrompts.DefaultGlyph(action.Name);
         var family="Segoe Fluent Icons, Segoe MDL2 Assets";
         warning="";
         if(action.IconKind is PromptIconKind.Emoji or PromptIconKind.NerdFont) {
             var glyph=Glyph(action);
-            if(glyph.Length==0) warning="请输入一个图标；暂时显示默认图标。";
+            if(glyph.Length==0) warning=T("IconMissing");
             else if(action.IconKind==PromptIconKind.Emoji) { text=glyph; family="Segoe UI Emoji, Segoe UI Symbol"; }
             else {
                 var font=string.IsNullOrWhiteSpace(action.IconFont)?NerdFonts.FirstOrDefault():NerdFonts.FirstOrDefault(name=>string.Equals(name,action.IconFont,StringComparison.OrdinalIgnoreCase));
-                if(font==null) warning="未找到所选 JetBrainsMono Nerd Font。安装字体并重启软件后生效；暂时显示默认图标。";
+                if(font==null) warning=T("IconFontMissing");
                 else {
                     var typeface=new Typeface(new FontFamily(font),FontStyles.Normal,FontWeights.Normal,FontStretches.Normal);
                     if(!typeface.TryGetGlyphTypeface(out var face) || !face.CharacterToGlyphMap.TryGetValue(glyph.EnumerateRunes().First().Value,out var index) || index==0)
-                        warning="此字体不包含该图标；暂时显示默认图标。";
+                        warning=T("IconUnsupported");
                     else { text=glyph; family=font; }
                 }
             }

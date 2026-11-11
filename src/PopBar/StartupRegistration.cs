@@ -24,10 +24,10 @@ internal sealed class StartupRegistration(string registryPath=StartupRegistratio
 
         if(string.IsNullOrEmpty(executablePath) || !Path.IsPathFullyQualified(executablePath) ||
             string.Equals(Path.GetFileName(executablePath),"dotnet.exe",StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("请直接运行 PopBar.exe 后设置登录启动。");
+            throw new InvalidOperationException(T("StartupRequiresExecutable"));
         var command=$"\"{executablePath}\" {LaunchArgument}";
         if(command.Length>260)
-            throw new InvalidOperationException("PopBar.exe 的路径太长，请移到路径较短的目录后重试。");
+            throw new InvalidOperationException(T("StartupPathTooLong"));
 
         using var key=Registry.CurrentUser.CreateSubKey(registryPath);
         key.SetValue(ValueName,command,RegistryValueKind.String);

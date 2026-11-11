@@ -41,21 +41,21 @@ internal sealed class NerdIconPicker : Window
 
     internal NerdIconPicker(FontFamily? font)
     {
-        Title="选择 Nerd Font 图标"; Width=680; Height=580; MinWidth=420; MinHeight=360;
+        Title=T("NerdPickerTitle"); Width=680; Height=580; MinWidth=420; MinHeight=360;
         WindowStartupLocation=WindowStartupLocation.CenterOwner;
         Ui.Style(this);
         var root=new DockPanel { Margin=new Thickness(20) }; Content=root;
         var top=new StackPanel(); DockPanel.SetDock(top,Dock.Top); root.Children.Add(top);
-        top.Children.Add(Ui.Label(font?.FamilyNames.Values.FirstOrDefault()??"未找到 JetBrainsMono Nerd Font，请安装字体并重启 PopBar。",true));
-        top.Children.Add(Ui.Label("搜索英文名称（如 translate、code）、码点，或粘贴图标"));
+        top.Children.Add(Ui.Label(font?.FamilyNames.Values.FirstOrDefault()??T("NerdPickerNoFont"),true));
+        top.Children.Add(Ui.Label(T("NerdPickerSearch")));
         var search=Ui.Input(""); search.Name="NerdIconSearch"; top.Children.Add(search);
         var status=Ui.Label("",true); status.Name="NerdIconStatus"; top.Children.Add(status);
         var bottom=new StackPanel { Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right,Margin=new Thickness(0,12,0,0) };
         DockPanel.SetDock(bottom,Dock.Bottom); root.Children.Add(bottom);
         var page=0;
-        var previous=Ui.Button("上一页",()=>{}); var next=Ui.Button("下一页",()=>{});
+        var previous=Ui.Button(T("PreviousPage"),()=>{}); var next=Ui.Button(T("NextPage"),()=>{});
         bottom.Children.Add(previous); bottom.Children.Add(next);
-        var cancel=Ui.Button("取消",Close); cancel.IsCancel=true; bottom.Children.Add(cancel);
+        var cancel=Ui.Button(T("Cancel"),Close); cancel.IsCancel=true; bottom.Children.Add(cancel);
         var tiles=new WrapPanel();
         var scroll=new ScrollViewer { Content=tiles,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled }; root.Children.Add(scroll);
         GlyphTypeface? face=null;
@@ -67,7 +67,7 @@ internal sealed class NerdIconPicker : Window
         {
             tiles.Children.Clear(); scroll.ScrollToTop();
             var pages=Math.Max(1,(matches.Length+pageSize-1)/pageSize);
-            status.Text=matches.Length==0?"没有匹配的图标。请检查搜索内容和所选字体。":$"{matches.Length} 个图标 · 第 {page+1} / {pages} 页 · 点击图标选用";
+            status.Text=matches.Length==0?T("NoMatchingIcons"):T("NerdPickerResults",matches.Length,page+1,pages);
             previous.IsEnabled=page>0; next.IsEnabled=page+1<pages;
             foreach(var item in matches.Skip(page*pageSize).Take(pageSize)) {
                 var button=Ui.Button("",()=> { SelectedGlyph=item.Glyph; DialogResult=true; });

@@ -1,0 +1,447 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="Above" xml:space="preserve">
+    <value>Above</value>
+  </data>
+  <data name="AddPrompt" xml:space="preserve">
+    <value>＋ Add prompt</value>
+  </data>
+  <data name="AiPrivacy" xml:space="preserve">
+    <value>Selected text is sent only when you click an AI action. Supports OpenAI-compatible Chat Completions.</value>
+  </data>
+  <data name="AiResultWindow" xml:space="preserve">
+    <value>AI result window</value>
+  </data>
+  <data name="AiService" xml:space="preserve">
+    <value>AI Service</value>
+  </data>
+  <data name="AiServiceDescription" xml:space="preserve">
+    <value>Connect to an OpenAI-compatible Chat Completions API.</value>
+  </data>
+  <data name="AlreadyRunning" xml:space="preserve">
+    <value>PopBar is already running. Open Settings from the system tray.</value>
+  </data>
+  <data name="ApiBaseUrl" xml:space="preserve">
+    <value>API base URL</value>
+  </data>
+  <data name="ApiBaseUrlHelp" xml:space="preserve">
+    <value>Example https://api.deepseek.com/v1. Omit /chat/completions. Remote services require HTTPS.</value>
+  </data>
+  <data name="ApiKey" xml:space="preserve">
+    <value>API key</value>
+  </data>
+  <data name="ApiKeyHelp" xml:space="preserve">
+    <value>Leave blank to keep the saved key. Windows DPAPI encrypts it for your account.</value>
+  </data>
+  <data name="AppStartupFailed" xml:space="preserve">
+    <value>Couldn't start PopBar</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="ApplicationNotInitialized" xml:space="preserve">
+    <value>The application has not been initialized.</value>
+  </data>
+  <data name="Authentication" xml:space="preserve">
+    <value>Authentication</value>
+  </data>
+  <data name="AutoCloseResult" xml:space="preserve">
+    <value>Close 5 seconds after losing focus</value>
+  </data>
+  <data name="AutoShowToolbar" xml:space="preserve">
+    <value>Show the toolbar after selecting text with the mouse</value>
+  </data>
+  <data name="AutomaticFont" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="Below" xml:space="preserve">
+    <value>Below</value>
+  </data>
+  <data name="ButtonName" xml:space="preserve">
+    <value>Button name</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CannotVerifySelection" xml:space="preserve">
+    <value>The selection changed or couldn't be verified as editable. Copy the result and paste it manually.</value>
+  </data>
+  <data name="ChooseIcon" xml:space="preserve">
+    <value>Choose icon…</value>
+  </data>
+  <data name="ClearSavedApiKey" xml:space="preserve">
+    <value>Clear the saved key for local services that don't need one</value>
+  </data>
+  <data name="ClipboardBusy" xml:space="preserve">
+    <value>The clipboard is busy. Try again.</value>
+  </data>
+  <data name="Copied" xml:space="preserve">
+    <value>Copied to the clipboard.</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="DeepSeekThinking" xml:space="preserve">
+    <value>Enable DeepSeek Flash thinking mode</value>
+  </data>
+  <data name="DeepSeekThinkingHelp" xml:space="preserve">
+    <value>Turning this off usually shows the answer sooner.</value>
+  </data>
+  <data name="DefaultFont" xml:space="preserve">
+    <value>Default font</value>
+  </data>
+  <data name="DefaultIcon" xml:space="preserve">
+    <value>Default icon</value>
+  </data>
+  <data name="DeletePrompt" xml:space="preserve">
+    <value>Delete prompt</value>
+  </data>
+  <data name="DragToReorder" xml:space="preserve">
+    <value>Drag to reorder</value>
+  </data>
+  <data name="EmojiHint" xml:space="preserve">
+    <value>Paste an emoji or press Win + . to enter one.</value>
+  </data>
+  <data name="EmptySettings" xml:space="preserve">
+    <value>The settings file is empty.</value>
+  </data>
+  <data name="EndpointInvalid" xml:space="preserve">
+    <value>The API URL must use HTTPS (HTTP is allowed for localhost) and omit credentials, queries, and fragments.</value>
+  </data>
+  <data name="EndpointSettings" xml:space="preserve">
+    <value>Connection settings</value>
+  </data>
+  <data name="ExcludedProcesses" xml:space="preserve">
+    <value>Excluded application processes</value>
+  </data>
+  <data name="ExcludedProcessesHelp" xml:space="preserve">
+    <value>Separate names with commas and omit .exe. Password managers are excluded by default.</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="ExplainPrompt" xml:space="preserve">
+    <value>Explain</value>
+  </data>
+  <data name="FileLocation" xml:space="preserve">
+    <value>File location</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="FontNotInstalled" xml:space="preserve">
+    <value>{0} (not installed)</value>
+  </data>
+  <data name="FontPreview" xml:space="preserve">
+    <value>Font preview · 中文 · 日本語</value>
+  </data>
+  <data name="FontSize" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="GeneralDescription" xml:space="preserve">
+    <value>Manage appearance, selection behavior, and search.</value>
+  </data>
+  <data name="HotkeyUnavailable" xml:space="preserve">
+    <value>Ctrl + Alt + Space is already in use. The automatic toolbar is still available.</value>
+  </data>
+  <data name="HttpRequestFailed" xml:space="preserve">
+    <value>The API request failed (HTTP {0}). Check the URL, model, key, and quota.</value>
+  </data>
+  <data name="IconFontMissing" xml:space="preserve">
+    <value>Font not found. Install JetBrainsMono NF and restart PopBar.</value>
+  </data>
+  <data name="IconFontOptions" xml:space="preserve">
+    <value>Font options</value>
+  </data>
+  <data name="IconMissing" xml:space="preserve">
+    <value>Choose an icon. The default icon is shown for now.</value>
+  </data>
+  <data name="IconRequired" xml:space="preserve">
+    <value>Enter one emoji, Nerd Font character, or valid code point for the custom icon.</value>
+  </data>
+  <data name="IconUnsupported" xml:space="preserve">
+    <value>This font doesn't contain that icon. Choose another icon.</value>
+  </data>
+  <data name="InputHookFailed" xml:space="preserve">
+    <value>Couldn't start global input monitoring.</value>
+  </data>
+  <data name="LaunchAtLogin" xml:space="preserve">
+    <value>Start PopBar when I sign in to Windows</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ManualShortcut" xml:space="preserve">
+    <value>Select text and press Ctrl + Alt + Space to show the toolbar manually.</value>
+  </data>
+  <data name="MissingPlaceholder" xml:space="preserve">
+    <value>If {{text}} is omitted, the selected text is appended to the prompt.</value>
+  </data>
+  <data name="ModelContentFilter" xml:space="preserve">
+    <value>The service filtered part of the content. The result is incomplete.</value>
+  </data>
+  <data name="ModelId" xml:space="preserve">
+    <value>Model ID</value>
+  </data>
+  <data name="ModelIdHelp" xml:space="preserve">
+    <value>Enter the model ID provided by your service.</value>
+  </data>
+  <data name="ModelOutputLimit" xml:space="preserve">
+    <value>The model reached its output limit. The result is incomplete.</value>
+  </data>
+  <data name="ModelRequired" xml:space="preserve">
+    <value>Enter a model ID in Settings.</value>
+  </data>
+  <data name="ModelThinking" xml:space="preserve">
+    <value>Model is thinking…</value>
+  </data>
+  <data name="NerdIconHint" xml:space="preserve">
+    <value>Paste an icon or use the button to choose one.</value>
+  </data>
+  <data name="NerdPickerNoFont" xml:space="preserve">
+    <value>JetBrainsMono Nerd Font was not found. Install it and restart PopBar.</value>
+  </data>
+  <data name="NerdPickerResults" xml:space="preserve">
+    <value>{0} icons · Page {1} of {2} · Click an icon to select it</value>
+  </data>
+  <data name="NerdPickerSearch" xml:space="preserve">
+    <value>Search by English name (such as translate or code), enter a code point, or paste an icon.</value>
+  </data>
+  <data name="NerdPickerTitle" xml:space="preserve">
+    <value>Choose a Nerd Font icon</value>
+  </data>
+  <data name="NewPromptName" xml:space="preserve">
+    <value>New action</value>
+  </data>
+  <data name="NewPromptTemplate" xml:space="preserve">
+    <value>Process the following text:
+{{text}}</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="NoMatchingIcons" xml:space="preserve">
+    <value>No matching icons. Check the search term and selected font.</value>
+  </data>
+  <data name="NoPrompts" xml:space="preserve">
+    <value>No prompts yet.
+Click Add prompt to get started.</value>
+  </data>
+  <data name="NoResponseText" xml:space="preserve">
+    <value>The service returned no text. Check that the model supports Chat Completions.</value>
+  </data>
+  <data name="OpenLink" xml:space="preserve">
+    <value>Open link</value>
+  </data>
+  <data name="Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="PasteIconName" xml:space="preserve">
+    <value>Paste an icon or enter a code point</value>
+  </data>
+  <data name="PasteIconTooltip" xml:space="preserve">
+    <value>Paste one icon or enter a code point (such as U+F121 or \udb81\uddca).</value>
+  </data>
+  <data name="PauseSelection" xml:space="preserve">
+    <value>Pause automatic toolbar</value>
+  </data>
+  <data name="PolishPrompt" xml:space="preserve">
+    <value>Polish</value>
+  </data>
+  <data name="PreparingRequest" xml:space="preserve">
+    <value>Preparing request…</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="PromptBody" xml:space="preserve">
+    <value>Prompt text</value>
+  </data>
+  <data name="PromptRequired" xml:space="preserve">
+    <value>Enter both a name and text for each prompt.</value>
+  </data>
+  <data name="Prompts" xml:space="preserve">
+    <value>Prompts</value>
+  </data>
+  <data name="PromptsDescription" xml:space="preserve">
+    <value>Customize up to 12 AI actions. {{text}} is replaced with the selected text.</value>
+  </data>
+  <data name="ReleaseModifiers" xml:space="preserve">
+    <value>Release Ctrl, Shift, Alt, and Win, then try again.</value>
+  </data>
+  <data name="ReplaceFailed" xml:space="preserve">
+    <value>Couldn't replace the text. Copy the result and paste it manually.</value>
+  </data>
+  <data name="ReplaceOriginal" xml:space="preserve">
+    <value>Replace original</value>
+  </data>
+  <data name="RequestComplete" xml:space="preserve">
+    <value>Complete</value>
+  </data>
+  <data name="RequestFailed" xml:space="preserve">
+    <value>The request failed. Check your connection and API settings.</value>
+  </data>
+  <data name="RequestStopped" xml:space="preserve">
+    <value>Stopped or timed out. You can copy the partial result.</value>
+  </data>
+  <data name="ResponseEventTooLarge" xml:space="preserve">
+    <value>The response event is too large.</value>
+  </data>
+  <data name="ResponseInterrupted" xml:space="preserve">
+    <value>The connection ended early. The result may be incomplete.</value>
+  </data>
+  <data name="ResponseLineTooLarge" xml:space="preserve">
+    <value>The response line is too long.</value>
+  </data>
+  <data name="ResponseTooLarge" xml:space="preserve">
+    <value>Stopped because the response was too large.</value>
+  </data>
+  <data name="ResultTooLarge" xml:space="preserve">
+    <value>Stopped because the result exceeded 256K characters.</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="SearchAndExclusions" xml:space="preserve">
+    <value>Search and exclusions</value>
+  </data>
+  <data name="SearchHttpsRequired" xml:space="preserve">
+    <value>The search URL must use HTTPS.</value>
+  </data>
+  <data name="SearchPlaceholderRequired" xml:space="preserve">
+    <value>The search URL must contain {text}.</value>
+  </data>
+  <data name="SearchUrl" xml:space="preserve">
+    <value>Search URL</value>
+  </data>
+  <data name="SearchUrlHelp" xml:space="preserve">
+    <value>Use {text} for the selected text. Example https://www.bing.com/search?q={text}</value>
+  </data>
+  <data name="SelectedCharacterCount" xml:space="preserve">
+    <value>{0:N0} characters selected</value>
+  </data>
+  <data name="SelectionBehavior" xml:space="preserve">
+    <value>Selection behavior</value>
+  </data>
+  <data name="SelectionChanged" xml:space="preserve">
+    <value>The selection changed. Select the text again.</value>
+  </data>
+  <data name="SelectionMissing" xml:space="preserve">
+    <value>Couldn't read any text. Check your selection and the app's accessibility support.</value>
+  </data>
+  <data name="SelectionReadFailed" xml:space="preserve">
+    <value>Couldn't read the selection. Try again.</value>
+  </data>
+  <data name="SendShortcutFailed" xml:space="preserve">
+    <value>Couldn't send the shortcut to the target app. Check its permissions.</value>
+  </data>
+  <data name="ServiceError" xml:space="preserve">
+    <value>The service returned an error. The partial result was kept.</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>Couldn't read the settings file. Defaults will be used and the original file will be kept.</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Couldn't save settings.</value>
+  </data>
+  <data name="SettingsSaveFailedTitle" xml:space="preserve">
+    <value>Couldn't save settings</value>
+  </data>
+  <data name="SettingsWindowTitle" xml:space="preserve">
+    <value>PopBar · Settings</value>
+  </data>
+  <data name="Startup" xml:space="preserve">
+    <value>Startup</value>
+  </data>
+  <data name="StartupPathTooLong" xml:space="preserve">
+    <value>The path to PopBar.exe is too long. Move it to a folder with a shorter path and try again.</value>
+  </data>
+  <data name="StartupReadFailed" xml:space="preserve">
+    <value>Couldn't read the Windows startup setting.</value>
+  </data>
+  <data name="StartupRequiresExecutable" xml:space="preserve">
+    <value>Run PopBar.exe directly to configure startup.</value>
+  </data>
+  <data name="StartupWriteFailed" xml:space="preserve">
+    <value>Other settings were saved. The startup setting couldn't be updated.
+{0}</value>
+  </data>
+  <data name="StartupWriteFailedTitle" xml:space="preserve">
+    <value>Couldn't update startup</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="StreamingResult" xml:space="preserve">
+    <value>Receiving the answer…</value>
+  </data>
+  <data name="SystemDefault" xml:space="preserve">
+    <value>Follow Windows</value>
+  </data>
+  <data name="Tagline" xml:space="preserve">
+    <value>Quick actions for selected text</value>
+  </data>
+  <data name="TerminalSelectionMissing" xml:space="preserve">
+    <value>Couldn't read the terminal selection. Select text with the mouse and try again. Ctrl+C is avoided to keep running commands uninterrupted.</value>
+  </data>
+  <data name="TerminalShift" xml:space="preserve">
+    <value>In terminals, show only when Shift is held while selecting text</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="ThemeHelp" xml:space="preserve">
+    <value>Follow Windows to match the system app theme.</value>
+  </data>
+  <data name="ToolbarIcon" xml:space="preserve">
+    <value>Toolbar icon</value>
+  </data>
+  <data name="ToolbarIconPreview" xml:space="preserve">
+    <value>Preview of the toolbar icon</value>
+  </data>
+  <data name="ToolbarPosition" xml:space="preserve">
+    <value>Toolbar position</value>
+  </data>
+  <data name="ToolbarPositionHelp" xml:space="preserve">
+    <value>Relative to the pointer after selection. The toolbar flips near screen edges.</value>
+  </data>
+  <data name="ToolbarTitle" xml:space="preserve">
+    <value>PopBar · Selection toolbar</value>
+  </data>
+  <data name="TranslatePrompt" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="TraySettings" xml:space="preserve">
+    <value>Settings…</value>
+  </data>
+  <data name="UiLanguage" xml:space="preserve">
+    <value>Display language</value>
+  </data>
+  <data name="WaitingForResponse" xml:space="preserve">
+    <value>Waiting for the service…</value>
+  </data>
+</root>

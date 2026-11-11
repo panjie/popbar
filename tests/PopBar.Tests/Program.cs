@@ -8,6 +8,22 @@ using System.Text.Json;
 var passed=0;
 void Check(bool yes,string name) { if(!yes) throw new Exception(name); Console.WriteLine("PASS "+name); passed++; }
 async Task Throws(Func<Task> action,string name) { try { await action(); } catch(Exception) { Check(true,name); return; } throw new Exception("Expected failure: "+name); }
+System.Globalization.CultureInfo culture(string name) => System.Globalization.CultureInfo.GetCultureInfo(name);
+Check(UiText.Resolve(UiLanguage.System,culture("ja-JP")).Name=="ja-JP"
+    && UiText.Resolve(UiLanguage.System,culture("zh-TW")).Name=="zh-CN"
+    && UiText.Resolve(UiLanguage.System,culture("fr-FR")).Name=="en-US", "Windows display language resolves to supported UI cultures");
+Check(UiText.Resolve(UiLanguage.English,culture("ja-JP")).Name=="en-US", "manual language overrides Windows display language");
+Check(JsonSerializer.Deserialize<Settings>("{}")!.Language==UiLanguage.System &&
+    JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(new Settings { Language=UiLanguage.Japanese }))!.Language==UiLanguage.Japanese,
+    "UI language defaults to Windows and persists a manual selection");
+var resources=new System.Resources.ResourceManager("PopBar.Resources.Strings",typeof(UiText).Assembly);
+var englishResources=resources.GetResourceSet(System.Globalization.CultureInfo.InvariantCulture,true,false)!;
+foreach(var name in new[]{"ja","zh-Hans"}) {
+    var translated=resources.GetResourceSet(culture(name),true,false);
+    Check(translated!=null && englishResources.Cast<System.Collections.DictionaryEntry>().All(entry=>
+        translated.GetObject((string)entry.Key) is string { Length: >0 }),$"complete UI translations for {name}");
+}
+UiText.Apply(UiLanguage.Chinese);
 Check(Actions.SearchUri("https://example.com/?q={text}","中文 &x=#").Query=="?q=%E4%B8%AD%E6%96%87%20%26x%3D%23","search query encoding");
 Check(Actions.Link("example.com/a?q=中文")?.Host=="example.com","bare domain");
 Check(Actions.Link("javascript:alert(1)")==null && Actions.Link("file:///C:/test.exe")==null,"unsafe schemes rejected");

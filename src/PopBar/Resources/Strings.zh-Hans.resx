@@ -1,0 +1,447 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="Above" xml:space="preserve">
+    <value>上方</value>
+  </data>
+  <data name="AddPrompt" xml:space="preserve">
+    <value>＋ 添加提示词</value>
+  </data>
+  <data name="AiPrivacy" xml:space="preserve">
+    <value>只有点击 AI 按钮时才会发送选中文字。当前支持 OpenAI 兼容 Chat Completions 协议。</value>
+  </data>
+  <data name="AiResultWindow" xml:space="preserve">
+    <value>AI 结果窗口</value>
+  </data>
+  <data name="AiService" xml:space="preserve">
+    <value>AI 服务</value>
+  </data>
+  <data name="AiServiceDescription" xml:space="preserve">
+    <value>连接 OpenAI 兼容的 Chat Completions 接口。</value>
+  </data>
+  <data name="AlreadyRunning" xml:space="preserve">
+    <value>PopBar 已在运行，请在系统托盘中打开设置。</value>
+  </data>
+  <data name="ApiBaseUrl" xml:space="preserve">
+    <value>API 基础地址</value>
+  </data>
+  <data name="ApiBaseUrlHelp" xml:space="preserve">
+    <value>例如 https://api.deepseek.com/v1，无需添加 /chat/completions。远程服务必须使用 HTTPS。</value>
+  </data>
+  <data name="ApiKey" xml:space="preserve">
+    <value>API Key</value>
+  </data>
+  <data name="ApiKeyHelp" xml:space="preserve">
+    <value>留空保留已有密钥；密钥使用 Windows DPAPI 当前用户加密存储。</value>
+  </data>
+  <data name="AppStartupFailed" xml:space="preserve">
+    <value>PopBar 启动失败</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>外观</value>
+  </data>
+  <data name="ApplicationNotInitialized" xml:space="preserve">
+    <value>应用程序尚未初始化。</value>
+  </data>
+  <data name="Authentication" xml:space="preserve">
+    <value>身份验证</value>
+  </data>
+  <data name="AutoCloseResult" xml:space="preserve">
+    <value>失去焦点 5 秒后自动关闭</value>
+  </data>
+  <data name="AutoShowToolbar" xml:space="preserve">
+    <value>鼠标划词后自动弹出</value>
+  </data>
+  <data name="AutomaticFont" xml:space="preserve">
+    <value>自动选择</value>
+  </data>
+  <data name="Below" xml:space="preserve">
+    <value>下方</value>
+  </data>
+  <data name="ButtonName" xml:space="preserve">
+    <value>按钮名称</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="CannotVerifySelection" xml:space="preserve">
+    <value>原选区已改变或无法确认可编辑，请复制后手动粘贴。</value>
+  </data>
+  <data name="ChooseIcon" xml:space="preserve">
+    <value>选择图标…</value>
+  </data>
+  <data name="ClearSavedApiKey" xml:space="preserve">
+    <value>清除已保存密钥（适用于无需密钥的本地服务）</value>
+  </data>
+  <data name="ClipboardBusy" xml:space="preserve">
+    <value>剪贴板正忙，请重试。</value>
+  </data>
+  <data name="Copied" xml:space="preserve">
+    <value>已复制到剪贴板。</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="Cut" xml:space="preserve">
+    <value>剪切</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>暗色</value>
+  </data>
+  <data name="DeepSeekThinking" xml:space="preserve">
+    <value>启用 DeepSeek Flash 思考模式</value>
+  </data>
+  <data name="DeepSeekThinkingHelp" xml:space="preserve">
+    <value>关闭时通常更快显示正文。</value>
+  </data>
+  <data name="DefaultFont" xml:space="preserve">
+    <value>默认字体</value>
+  </data>
+  <data name="DefaultIcon" xml:space="preserve">
+    <value>默认图标</value>
+  </data>
+  <data name="DeletePrompt" xml:space="preserve">
+    <value>删除提示词</value>
+  </data>
+  <data name="DragToReorder" xml:space="preserve">
+    <value>拖动调整顺序</value>
+  </data>
+  <data name="EmojiHint" xml:space="preserve">
+    <value>粘贴 Emoji，或按 Win + . 输入</value>
+  </data>
+  <data name="EmptySettings" xml:space="preserve">
+    <value>设置文件为空。</value>
+  </data>
+  <data name="EndpointInvalid" xml:space="preserve">
+    <value>API 地址必须为 HTTPS（本机服务可用 HTTP），不含密钥、查询参数或 #。</value>
+  </data>
+  <data name="EndpointSettings" xml:space="preserve">
+    <value>接口配置</value>
+  </data>
+  <data name="ExcludedProcesses" xml:space="preserve">
+    <value>排除的应用进程名</value>
+  </data>
+  <data name="ExcludedProcessesHelp" xml:space="preserve">
+    <value>使用逗号分隔，不包含 .exe。密码管理器默认已排除。</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="ExplainPrompt" xml:space="preserve">
+    <value>解释</value>
+  </data>
+  <data name="FileLocation" xml:space="preserve">
+    <value>文件位置</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>字体</value>
+  </data>
+  <data name="FontNotInstalled" xml:space="preserve">
+    <value>{0}（未安装）</value>
+  </data>
+  <data name="FontPreview" xml:space="preserve">
+    <value>字体预览 · 日本語 · PopBar</value>
+  </data>
+  <data name="FontSize" xml:space="preserve">
+    <value>字号</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>常规</value>
+  </data>
+  <data name="GeneralDescription" xml:space="preserve">
+    <value>管理外观、划词行为和搜索方式。</value>
+  </data>
+  <data name="HotkeyUnavailable" xml:space="preserve">
+    <value>Ctrl + Alt + Space 已被占用；自动划词仍可用。</value>
+  </data>
+  <data name="HttpRequestFailed" xml:space="preserve">
+    <value>API 请求失败（HTTP {0}）。请检查地址、模型、密钥和服务额度。</value>
+  </data>
+  <data name="IconFontMissing" xml:space="preserve">
+    <value>未找到字体，请安装 JetBrainsMono NF 后重启。</value>
+  </data>
+  <data name="IconFontOptions" xml:space="preserve">
+    <value>字体选项</value>
+  </data>
+  <data name="IconMissing" xml:space="preserve">
+    <value>尚未选择图标，当前使用默认图标。</value>
+  </data>
+  <data name="IconRequired" xml:space="preserve">
+    <value>自定义图标必须填写一个 Emoji 或 Nerd Font 字符/有效码点。</value>
+  </data>
+  <data name="IconUnsupported" xml:space="preserve">
+    <value>此字体不支持该图标，请重新选择。</value>
+  </data>
+  <data name="InputHookFailed" xml:space="preserve">
+    <value>无法启动全局输入监听。</value>
+  </data>
+  <data name="LaunchAtLogin" xml:space="preserve">
+    <value>登录 Windows 时启动 PopBar</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>亮色</value>
+  </data>
+  <data name="ManualShortcut" xml:space="preserve">
+    <value>手动唤起：选中文字后按 Ctrl + Alt + Space</value>
+  </data>
+  <data name="MissingPlaceholder" xml:space="preserve">
+    <value>未填写 {{text}} 时，选中文字会附加到提示词末尾。</value>
+  </data>
+  <data name="ModelContentFilter" xml:space="preserve">
+    <value>服务过滤了部分内容，结果不完整。</value>
+  </data>
+  <data name="ModelId" xml:space="preserve">
+    <value>模型 ID</value>
+  </data>
+  <data name="ModelIdHelp" xml:space="preserve">
+    <value>填写服务商或本地服务提供的实际模型名称。</value>
+  </data>
+  <data name="ModelOutputLimit" xml:space="preserve">
+    <value>模型输出达到长度限制，结果不完整。</value>
+  </data>
+  <data name="ModelRequired" xml:space="preserve">
+    <value>请先在设置中填写模型 ID。</value>
+  </data>
+  <data name="ModelThinking" xml:space="preserve">
+    <value>模型思考中…</value>
+  </data>
+  <data name="NerdIconHint" xml:space="preserve">
+    <value>直接粘贴图标，或点击右侧选择</value>
+  </data>
+  <data name="NerdPickerNoFont" xml:space="preserve">
+    <value>未找到 JetBrainsMono Nerd Font，请安装字体并重启 PopBar。</value>
+  </data>
+  <data name="NerdPickerResults" xml:space="preserve">
+    <value>{0} 个图标 · 第 {1} / {2} 页 · 点击图标选用</value>
+  </data>
+  <data name="NerdPickerSearch" xml:space="preserve">
+    <value>搜索英文名称（如 translate、code）、码点，或粘贴图标</value>
+  </data>
+  <data name="NerdPickerTitle" xml:space="preserve">
+    <value>选择 Nerd Font 图标</value>
+  </data>
+  <data name="NewPromptName" xml:space="preserve">
+    <value>新操作</value>
+  </data>
+  <data name="NewPromptTemplate" xml:space="preserve">
+    <value>请处理以下文字：
+{{text}}</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>下一页</value>
+  </data>
+  <data name="NoMatchingIcons" xml:space="preserve">
+    <value>没有匹配的图标。请检查搜索内容和所选字体。</value>
+  </data>
+  <data name="NoPrompts" xml:space="preserve">
+    <value>还没有提示词。
+点击“添加提示词”开始。</value>
+  </data>
+  <data name="NoResponseText" xml:space="preserve">
+    <value>服务未返回文字，请检查模型是否支持 Chat Completions。</value>
+  </data>
+  <data name="OpenLink" xml:space="preserve">
+    <value>打开链接</value>
+  </data>
+  <data name="Paste" xml:space="preserve">
+    <value>粘贴</value>
+  </data>
+  <data name="PasteIconName" xml:space="preserve">
+    <value>粘贴图标或输入码点</value>
+  </data>
+  <data name="PasteIconTooltip" xml:space="preserve">
+    <value>粘贴单个图标，或输入码点（如 U+F121、\udb81\uddca）</value>
+  </data>
+  <data name="PauseSelection" xml:space="preserve">
+    <value>暂停自动划词</value>
+  </data>
+  <data name="PolishPrompt" xml:space="preserve">
+    <value>润色</value>
+  </data>
+  <data name="PreparingRequest" xml:space="preserve">
+    <value>准备请求…</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>上一页</value>
+  </data>
+  <data name="PromptBody" xml:space="preserve">
+    <value>提示词内容</value>
+  </data>
+  <data name="PromptRequired" xml:space="preserve">
+    <value>提示词名称和内容不能为空。</value>
+  </data>
+  <data name="Prompts" xml:space="preserve">
+    <value>提示词</value>
+  </data>
+  <data name="PromptsDescription" xml:space="preserve">
+    <value>自定义工具条中的 AI 操作，最多 12 个。{{text}} 会被选中文字替换。</value>
+  </data>
+  <data name="ReleaseModifiers" xml:space="preserve">
+    <value>请松开 Ctrl / Shift / Alt / Win 后重试。</value>
+  </data>
+  <data name="ReplaceFailed" xml:space="preserve">
+    <value>无法替换，请复制后手动粘贴。</value>
+  </data>
+  <data name="ReplaceOriginal" xml:space="preserve">
+    <value>替换原文</value>
+  </data>
+  <data name="RequestComplete" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="RequestFailed" xml:space="preserve">
+    <value>请求失败，请检查网络和接口设置。</value>
+  </data>
+  <data name="RequestStopped" xml:space="preserve">
+    <value>已停止或超时 · 部分结果未完成，可手动复制。</value>
+  </data>
+  <data name="ResponseEventTooLarge" xml:space="preserve">
+    <value>响应事件过大。</value>
+  </data>
+  <data name="ResponseInterrupted" xml:space="preserve">
+    <value>连接提前结束，结果可能不完整。</value>
+  </data>
+  <data name="ResponseLineTooLarge" xml:space="preserve">
+    <value>响应行过大。</value>
+  </data>
+  <data name="ResponseTooLarge" xml:space="preserve">
+    <value>响应过大，已停止。</value>
+  </data>
+  <data name="ResultTooLarge" xml:space="preserve">
+    <value>结果超过 256K 字符，已停止。</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="SearchAndExclusions" xml:space="preserve">
+    <value>搜索与排除</value>
+  </data>
+  <data name="SearchHttpsRequired" xml:space="preserve">
+    <value>搜索地址必须为 HTTPS。</value>
+  </data>
+  <data name="SearchPlaceholderRequired" xml:space="preserve">
+    <value>搜索地址必须包含 {text}。</value>
+  </data>
+  <data name="SearchUrl" xml:space="preserve">
+    <value>搜索地址</value>
+  </data>
+  <data name="SearchUrlHelp" xml:space="preserve">
+    <value>使用 {text} 代表选中文字，例如 https://www.bing.com/search?q={text}</value>
+  </data>
+  <data name="SelectedCharacterCount" xml:space="preserve">
+    <value>已选 {0:N0} 字符</value>
+  </data>
+  <data name="SelectionBehavior" xml:space="preserve">
+    <value>划词行为</value>
+  </data>
+  <data name="SelectionChanged" xml:space="preserve">
+    <value>选区已改变，请重新选择。</value>
+  </data>
+  <data name="SelectionMissing" xml:space="preserve">
+    <value>未读取到文字。请确认已选中文字，或检查该应用的辅助功能支持。</value>
+  </data>
+  <data name="SelectionReadFailed" xml:space="preserve">
+    <value>无法读取选区，请重试。</value>
+  </data>
+  <data name="SendShortcutFailed" xml:space="preserve">
+    <value>无法向目标应用发送快捷键（请检查权限）。</value>
+  </data>
+  <data name="ServiceError" xml:space="preserve">
+    <value>服务返回错误，已保留部分结果。</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>设置文件无法读取，将使用默认设置。原文件不会自动覆盖。</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>设置保存失败。</value>
+  </data>
+  <data name="SettingsSaveFailedTitle" xml:space="preserve">
+    <value>无法保存</value>
+  </data>
+  <data name="SettingsWindowTitle" xml:space="preserve">
+    <value>PopBar · 设置</value>
+  </data>
+  <data name="Startup" xml:space="preserve">
+    <value>启动</value>
+  </data>
+  <data name="StartupPathTooLong" xml:space="preserve">
+    <value>PopBar.exe 的路径太长，请移到路径较短的目录后重试。</value>
+  </data>
+  <data name="StartupReadFailed" xml:space="preserve">
+    <value>无法读取 Windows 登录启动设置。</value>
+  </data>
+  <data name="StartupRequiresExecutable" xml:space="preserve">
+    <value>请直接运行 PopBar.exe 后设置登录启动。</value>
+  </data>
+  <data name="StartupWriteFailed" xml:space="preserve">
+    <value>其他设置已保存，登录启动设置未能更新。
+{0}</value>
+  </data>
+  <data name="StartupWriteFailedTitle" xml:space="preserve">
+    <value>无法更新登录启动</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="StreamingResult" xml:space="preserve">
+    <value>正在输出…</value>
+  </data>
+  <data name="SystemDefault" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="Tagline" xml:space="preserve">
+    <value>划词，让下一步更简单</value>
+  </data>
+  <data name="TerminalSelectionMissing" xml:space="preserve">
+    <value>终端未公开可读取的选区。请用鼠标选中文字后重试；为避免中断命令，不会发送 Ctrl+C。</value>
+  </data>
+  <data name="TerminalShift" xml:space="preserve">
+    <value>终端中仅在按住 Shift 划词时弹出</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="ThemeHelp" xml:space="preserve">
+    <value>跟随系统会在 Windows 应用主题变化时自动更新。</value>
+  </data>
+  <data name="ToolbarIcon" xml:space="preserve">
+    <value>工具栏图标</value>
+  </data>
+  <data name="ToolbarIconPreview" xml:space="preserve">
+    <value>工具栏实际显示效果</value>
+  </data>
+  <data name="ToolbarPosition" xml:space="preserve">
+    <value>工具条显示位置</value>
+  </data>
+  <data name="ToolbarPositionHelp" xml:space="preserve">
+    <value>相对于划词结束时的鼠标位置；靠近屏幕边缘时自动避让。</value>
+  </data>
+  <data name="ToolbarTitle" xml:space="preserve">
+    <value>PopBar · 划词工具条</value>
+  </data>
+  <data name="TranslatePrompt" xml:space="preserve">
+    <value>翻译</value>
+  </data>
+  <data name="TraySettings" xml:space="preserve">
+    <value>设置…</value>
+  </data>
+  <data name="UiLanguage" xml:space="preserve">
+    <value>界面语言</value>
+  </data>
+  <data name="WaitingForResponse" xml:space="preserve">
+    <value>等待服务响应…</value>
+  </data>
+</root>

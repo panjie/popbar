@@ -187,6 +187,36 @@ internal static class UiChecks
             Capture(toolbar,"toolbar-emoji");
         } finally { toolbar.Close(); System.Windows.Forms.Cursor.Position=toolbarCursor; }
 
+        var languageSettings=new Settings();
+        var builtIn=languageSettings.Prompts[0];
+        var originalTemplate=builtIn.Prompt;
+        var customPrompt=new PromptAction { Name="我的提示词",Prompt="Keep this template: {{text}}" };
+        var languagePreview=new ResultWindow(languageSettings,builtIn,new Selection(0,"hello",false,null,null));
+        try {
+            foreach(var (choice,tag,title,promptName,copyLabel) in new[]{
+                (UiLanguage.English,"en-US","PopBar · Settings","Translate","Copy"),
+                (UiLanguage.Japanese,"ja-JP","PopBar · 設定","翻訳","コピー")
+            }) {
+                UiText.Apply(choice);
+                languagePreview.RefreshLanguage();
+                BuiltInPrompts.LocalizeName(customPrompt);
+                languageSettings.Language=choice;
+                var localizedSettings=new SettingsWindow(languageSettings,_=>{});
+                try {
+                    var selector=FindNamed<ComboBox>(localizedSettings,"LanguageSelector");
+                    Check(localizedSettings.Title==title && string.Equals(localizedSettings.Language.IetfLanguageTag,tag,StringComparison.OrdinalIgnoreCase) &&
+                        Equals(selector.SelectedValue,choice),$"settings display and select {tag}");
+                    Check(languagePreview.Title.EndsWith(promptName,StringComparison.Ordinal) &&
+                        Equals(FindNamed<Button>(languagePreview,"CopyResultButton").Content,copyLabel) &&
+                        builtIn.Prompt==originalTemplate && customPrompt.Name=="我的提示词",$"open result switches to {tag} without changing prompt text");
+                    Capture(localizedSettings,$"settings-{tag}-general");
+                    FindNamed<Button>(localizedSettings,"AiNavigationButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Capture(localizedSettings,$"settings-{tag}-ai");
+                    Capture(languagePreview,$"result-{tag}");
+                } finally { localizedSettings.Close(); }
+            }
+        } finally { languagePreview.Close(); UiText.Apply(UiLanguage.Chinese); }
+
         var selectionBox=new TextBox { Text="Hello selection" };
         var origin=new Window { Title="PopBar activation test source",Width=320,Height=160,Content=selectionBox };
         var foregroundResult=new Window { Title="PopBar activation test result",Width=320,Height=160,Content=new TextBlock { Text="Result preview" } };
@@ -464,6 +494,7 @@ internal static class UiChecks
             manualClosePreview.Close();
             focusTarget.Close();
         }
+
         app.Shutdown();
         return passed;
     }
