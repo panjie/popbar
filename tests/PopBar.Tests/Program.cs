@@ -13,6 +13,8 @@ Check(Actions.Link("example.com/a?q=中文")?.Host=="example.com","bare domain")
 Check(Actions.Link("javascript:alert(1)")==null && Actions.Link("file:///C:/test.exe")==null,"unsafe schemes rejected");
 Check(Actions.Link("https://user:password@example.com")==null,"URL credentials rejected");
 Check(Actions.Link("some words example.com")==null,"phrase remains search");
+Check(MarkdownText.DemoteImages("![追踪](https://example.com/a.png)")=="[追踪](https://example.com/a.png)","markdown images become links");
+Check(MarkdownText.DemoteImages("普通文字")=="普通文字","markdown without images unchanged");
 Check(AiClient.Endpoint("http://127.0.0.1:1234/v1").AbsoluteUri=="http://127.0.0.1:1234/v1/chat/completions","local endpoint");
 await Throws(()=>Task.FromResult(AiClient.Endpoint("http://example.com/v1")),"remote plaintext rejected");
 await Throws(()=>Task.FromResult(AiClient.Endpoint("https://example.com/v1?key=x")),"query credentials rejected");

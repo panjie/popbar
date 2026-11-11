@@ -28,6 +28,10 @@ internal static class UiChecks
         var app=new App { StartServices=false };
         app.InitializeComponent();
         void Check(bool yes,string name) { if(!yes) throw new Exception(name); Console.WriteLine("PASS "+name); passed++; }
+        var plainDocument=new System.Windows.Documents.FlowDocument(new System.Windows.Documents.Paragraph(new System.Windows.Documents.Run("第一段")));
+        plainDocument.Blocks.Add(new System.Windows.Documents.Paragraph(new System.Windows.Documents.Run("第二段")));
+        Check(MarkdownText.Plain(plainDocument)=="第一段\r\n第二段","markdown plain text extraction");
+        Check(MarkdownText.Plain(null)=="","markdown plain text handles empty document");
         var brushKeys=new[] { "WindowBackgroundBrush","SurfaceBrush","SecondarySurfaceBrush","TextBrush","MutedTextBrush","BorderBrush","AccentBrush","AccentHoverBrush","AccentPressedBrush","OnAccentBrush","DangerBrush","HoverBrush","PressedBrush","DisabledBrush","FocusBrush" };
         var styleKeys=new[] { "PrimaryButtonStyle","SecondaryButtonStyle","SubtleButtonStyle","DangerButtonStyle","ToolbarButtonStyle","NavigationButtonStyle","InputTextBoxStyle","InputPasswordBoxStyle","CheckBoxStyle","ComboBoxStyle","ToolTipStyle" };
 
@@ -229,9 +233,26 @@ internal static class UiChecks
             Capture(settingsWindow,"settings-minimum-full");
         } finally { settingsWindow.Close(); }
 
+        void VoidPump()
+        {
+            var frame=new System.Windows.Threading.DispatcherFrame();
+            app.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ContextIdle,new Action(()=>frame.Continue=false));
+            System.Windows.Threading.Dispatcher.PushFrame(frame);
+        }
+        var scrollViewer=new MdXaml.MarkdownScrollViewer { Width=400,Height=200,VerticalScrollBarVisibility=ScrollBarVisibility.Auto };
+        var scrollWindow=new Window { Width=400,Height=200,ShowActivated=false,WindowStartupLocation=WindowStartupLocation.Manual,Left=-10000,Top=-10000,Content=scrollViewer };
+        try {
+            scrollWindow.Show();
+            scrollViewer.Markdown=string.Join("\n",Enumerable.Repeat("滚动测试行",200));
+            ResultWindow.ScrollToEnd(scrollViewer);
+            VoidPump();
+            var innerScroll=Descendants<ScrollViewer>(scrollViewer).FirstOrDefault();
+            Check(innerScroll is not null && innerScroll.ScrollableHeight>0 && Math.Abs(innerScroll.VerticalOffset-innerScroll.ScrollableHeight)<1,"markdown viewer scrolls to end");
+        } finally { scrollWindow.Close(); }
+
         var resultWindow=new ResultWindow(new Settings { Model="test-model" },new PromptAction { Name="翻译",Prompt="Translate {{text}}" },new Selection(0,"hello",false,null,null));
         try {
-            var output=FindNamed<TextBox>(resultWindow,"OutputTextBox");
+            var output=FindNamed<MdXaml.MarkdownScrollViewer>(resultWindow,"OutputMarkdown");
             var status=FindNamed<TextBlock>(resultWindow,"StatusText");
             var stop=FindNamed<Button>(resultWindow,"StopButton");
             var retry=FindNamed<Button>(resultWindow,"RetryButton");
@@ -240,13 +261,48 @@ internal static class UiChecks
             var close=FindNamed<Button>(resultWindow,"CloseResultButton");
             Check(!replace.IsEnabled,"replacement disabled before a completed request");
             Check(LogicalDescendants<TextBlock>(resultWindow).Any(text=>text.Text=="翻译") && LogicalDescendants<TextBlock>(resultWindow).Any(text=>text.Text.Contains("test-model") && text.Text.Contains("5")) && status.Text.Length>0,"result heading metadata and status");
-            Check(output.IsReadOnly && output.AcceptsReturn && output.TextWrapping==TextWrapping.Wrap && output.VerticalScrollBarVisibility==ScrollBarVisibility.Auto,"result output is selectable read-only text");
+            Check(!output.IsToolBarVisible && output.IsSelectionEnabled && output.VerticalScrollBarVisibility==ScrollBarVisibility.Auto && output.HorizontalScrollBarVisibility==ScrollBarVisibility.Disabled,"result output is selectable scrolling markdown");
+            Check(output.ClickAction==MdXaml.ClickAction.SafetyOpenBrowser,"result links use safe browser command");
+            Check(output.FontSize==14,"result markdown body font size");
             Check(ReferenceEquals(stop.Style,app.FindResource("DangerButtonStyle")) && ReferenceEquals(retry.Style,app.FindResource("SecondaryButtonStyle")) && ReferenceEquals(copy.Style,app.FindResource("SecondaryButtonStyle")) && ReferenceEquals(replace.Style,app.FindResource("PrimaryButtonStyle")) && ReferenceEquals(close.Style,app.FindResource("SubtleButtonStyle")),"result action styles");
+            resultWindow.Append("第一段");
+            resultWindow.Append("第二段");
+            Check(MarkdownText.Plain(output.Document!)=="第一段","streaming render is throttled");
+            Check(resultWindow.PlainResult()=="第一段第二段","copy uses latest streamed content");
+            resultWindow.RenderMarkdown("# 标题\n\n**粗体** 与 `代码`\n\n- 第一项\n- 第二项\n\n```\nvar x = 1;\nvar y = 2;\n```\n\n| 名称 | 含义 |\n| --- | --- |\n| SCM | 源代码管理 |");
+            var rendered=output.Document!;
+            var renderedText=MarkdownText.Plain(rendered);
+            Check(rendered.Blocks.OfType<System.Windows.Documents.Paragraph>().Any(block=>Equals(block.Tag,"Heading1")),"markdown heading rendered");
+            Check(rendered.Blocks.OfType<System.Windows.Documents.List>().Any(),"markdown list rendered");
+            Check(rendered.Blocks.OfType<System.Windows.Documents.Table>().Any(),"markdown table rendered");
+            var codeBlock=rendered.Blocks.OfType<System.Windows.Documents.Paragraph>().FirstOrDefault(block=>Equals(block.Tag,"CodeBlock"));
+            Check(codeBlock is not null,"markdown code block rendered");
+            Check(codeBlock!.FontFamily.Source.Contains("Cascadia"),"markdown code uses app code font");
+            Check(renderedText.Contains("标题") && renderedText.Contains("粗体") && renderedText.Contains("第一项") && renderedText.Contains("var x = 1;") && renderedText.Contains("var y = 2;") && renderedText.Contains("源代码管理") && !renderedText.Contains("**") && !renderedText.Contains("##"),"markdown rendering and plain text");
+            resultWindow.RenderMarkdown("![追踪](file:///C:/PopBar-no-such-image.png)");
+            Check(output.Document!.Blocks.OfType<System.Windows.Documents.Paragraph>().SelectMany(block=>block.Inlines).OfType<System.Windows.Documents.Hyperlink>().Any(),"markdown images become links");
+            resultWindow.RenderMarkdown("```\n未闭合代码");
+            Check(MarkdownText.Plain(output.Document!).Contains("未闭合代码"),"truncated markdown keeps content");
+            resultWindow.RenderMarkdown(string.Join("\n",Enumerable.Repeat("- 项目",2000)));
+            Check(MarkdownText.Plain(output.Document!).Contains("项目"),"large markdown renders");
+            var hugeChunk="## 标题\n\n这是一段用于验证接近上限的长文本。\n\n- 项目一\n- 项目二\n\n";
+            var huge=string.Concat(Enumerable.Repeat(hugeChunk,262144/hugeChunk.Length+1)).Substring(0,262144)+"\n\n```\nvar tail = 1;\n```\n\n结尾标记";
+            var hugeStarted=System.Diagnostics.Stopwatch.StartNew();
+            resultWindow.RenderMarkdown(huge);
+            Check(hugeStarted.Elapsed<TimeSpan.FromSeconds(30) && MarkdownText.Plain(output.Document!).Contains("结尾标记"),"near-limit markdown renders within budget");
+            resultWindow.RenderMarkdown("# 解释\n\n「SCM」是一个缩写，常见含义包括：\n\n- **Source Code Management**：源代码管理\n- **Software Configuration Management**：软件配置管理\n\n```powershell\ngit status\n```");
+            var finalDocument=output.Document!;
+            var finalRoot=(FrameworkElement)resultWindow.Content;
+            finalRoot.Measure(new Size(664,561)); finalRoot.Arrange(new Rect(0,0,664,561)); finalRoot.UpdateLayout();
+            var finalHeading=finalDocument.Blocks.OfType<System.Windows.Documents.Paragraph>().First(block=>Equals(block.Tag,"Heading1"));
             ThemeManager.Apply(AppTheme.Light);
             var resultLight=((SolidColorBrush)resultWindow.Background).Color;
+            var outputLight=((SolidColorBrush)output.Background).Color;
+            var headingLight=(finalHeading.Foreground as SolidColorBrush)?.Color;
             ThemeManager.Apply(AppTheme.Dark);
             Check(((SolidColorBrush)resultWindow.Background).Color!=resultLight,"result window updates theme");
-            output.Text="这是一段用于视觉验收的 AI 结果。\n\n正文保持纯文本，可选择、复制与滚动。";
+            Check(((SolidColorBrush)output.Background).Color!=outputLight,"result markdown follows theme");
+            Check(headingLight is not null && (finalHeading.Foreground as SolidColorBrush)?.Color!=headingLight,"markdown headings follow theme");
             Capture(resultWindow,"result");
         } finally { resultWindow.Close(); }
         app.Shutdown();
