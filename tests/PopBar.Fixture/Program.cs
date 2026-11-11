@@ -27,6 +27,13 @@ static class Program
                 var s=await Read(0);
                 Check(s?.Text=="Hello" && s.Editable,"editable selection read: "+(s==null?SelectionReader.Diagnostic:$"text={s.Text}, editable={s.Editable}"));
                 Check(await SelectionReader.Validate(s!)!=null,"unchanged selection accepted");
+                Check(await SelectionReader.Run(()=>SelectionReader.BelongsToWindow(hwnd,s!.Element!)?new object():null)!=null,"selection provider belongs to source window");
+                var unrelated=new Window { Title="Unrelated selection test window" };
+                try {
+                    var unrelatedHandle=new System.Windows.Interop.WindowInteropHelper(unrelated).EnsureHandle();
+                    Check(await SelectionReader.Run(()=>SelectionReader.ReadElement(unrelatedHandle,s!.Element!))==null,"foreign window selection rejected");
+                    Check(await SelectionReader.Validate(s! with { Window=unrelatedHandle })==null,"replacement rejects foreign window provider");
+                } finally { unrelated.Close(); }
                 edit.Select(6,6);
                 Check(await SelectionReader.Validate(s!)==null,"changed selection rejected");
                 edit.Select(0,0);

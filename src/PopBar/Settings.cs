@@ -1,16 +1,29 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace PopBar;
 
+public enum AppTheme { System, Light, Dark }
+public enum ToolbarPlacement { Above, Below }
+public enum PromptIconKind { Default, Emoji, NerdFont }
 public sealed class PromptAction
 {
     public string Name { get; set; } = "新操作";
     public string Prompt { get; set; } = "请处理以下文字：\n{{text}}";
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public PromptIconKind IconKind { get; set; }
+    public string Icon { get; set; } = "";
+    public string IconFont { get; set; } = "";
+    internal PromptAction Copy() => new() { Name=Name,Prompt=Prompt,IconKind=IconKind,Icon=Icon,IconFont=IconFont };
 }
 public sealed class Settings
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public AppTheme Theme { get; set; } = AppTheme.System;
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ToolbarPlacement ToolbarPosition { get; set; } = ToolbarPlacement.Above;
     public bool Enabled { get; set; } = true;
     public bool TerminalShift { get; set; } = true;
     public string ExcludedApps { get; set; } = "KeePass, KeePassXC, 1Password, Bitwarden";

@@ -21,6 +21,17 @@ Check(AiClient.BuildPrompt("Explain","hello")=="Explain\n\nhello","prompt append
 var settings=new Settings(); settings.SetKey("test-key-not-real");
 Check(settings.GetKey()=="test-key-not-real"&&!settings.EncryptedKey.Contains("test-key-not-real"),"DPAPI round trip");
 Check(settings.Excludes("KeePassXC")&&!settings.Excludes("notepad"),"process exclusions");
+Check(JsonSerializer.Deserialize<Settings>("{}")!.ToolbarPosition==ToolbarPlacement.Above,"legacy toolbar stays above");
+Check(Enum.GetValues<ToolbarPlacement>().All(position=>JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(new Settings { ToolbarPosition=position }))!.ToolbarPosition==position),"toolbar placement JSON round trip");
+Check(ToolbarWindow.VerticalPosition(400,50,0,1000,ToolbarPlacement.Above)==336 && ToolbarWindow.VerticalPosition(400,50,0,1000,ToolbarPlacement.Below)==420,"toolbar preferred side");
+Check(ToolbarWindow.VerticalPosition(20,50,0,1000,ToolbarPlacement.Above)==40 && ToolbarWindow.VerticalPosition(980,50,0,1000,ToolbarPlacement.Below)==916,"toolbar flips at screen edges");
+Check(ToolbarWindow.VerticalPosition(-500,75,-1080,0,ToolbarPlacement.Below)==-480 && ToolbarWindow.VerticalPosition(40,200,0,100,ToolbarPlacement.Below)==0,"toolbar negative monitor and oversized bounds");
+Check(JsonSerializer.Deserialize<Settings>("{}")!.Theme==AppTheme.System,"legacy settings follow system theme");
+Check(JsonSerializer.Serialize(new Settings { Theme=AppTheme.Light }).Contains("\"Theme\":\"Light\"") && JsonSerializer.Serialize(new Settings { Theme=AppTheme.Dark }).Contains("\"Theme\":\"Dark\"") && JsonSerializer.Serialize(new Settings { Theme=AppTheme.System }).Contains("\"Theme\":\"System\""),"theme preference uses string JSON values");
+Check(Enum.GetValues<AppTheme>().All(theme=>JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(new Settings { Theme=theme }))!.Theme==theme),"theme preference round trip");
+await Throws(()=>Task.FromResult(JsonSerializer.Deserialize<Settings>("{\"Theme\":\"Sepia\"}")),"unknown theme rejected");
+Check(ThemeManager.Resolve(AppTheme.System,true)==AppTheme.Light && ThemeManager.Resolve(AppTheme.System,false)==AppTheme.Dark,"system theme resolution");
+Check(ThemeManager.Resolve(AppTheme.Light,false)==AppTheme.Light && ThemeManager.Resolve(AppTheme.Dark,true)==AppTheme.Dark,"explicit theme resolution");
 var sse="data: {\"choices\":[{\"delta\":{\"content\":\"你好\"}}]}\r\n\r\ndata: {\"choices\":[{\"delta\":{\"content\":\" world\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
 var result=new StringBuilder(); await AiClient.ParseStream(new StringReader(sse),x=>result.Append(x),default);
 Check(result.ToString()=="你好 world","SSE unicode CRLF and completion");
@@ -32,6 +43,7 @@ using(var cts=new CancellationTokenSource()) { cts.Cancel(); await Throws(()=>Ai
 var handler=new FakeHandler(sse); settings.BaseUrl="https://example.com/v1"; settings.Model="test-model";
 result.Clear(); await AiClient.Stream(settings,new PromptAction { Prompt="Translate {{text}}" },"你好",x=>result.Append(x),default,handler);
 Check(result.ToString()=="你好 world"&&handler.Valid,"HTTP request and streaming integration");
+passed+=UiChecks.Run();
 Console.WriteLine($"{passed} checks passed.");
 
 sealed class FakeHandler(string sse):HttpMessageHandler

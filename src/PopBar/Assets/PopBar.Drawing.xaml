@@ -1,0 +1,18 @@
+<DrawingImage xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+  <DrawingImage.Drawing>
+    <DrawingGroup>
+      <GeometryDrawing Geometry="M 68,8 L 188,8 Q 248,8 248,68 L 248,188 Q 248,248 188,248 L 68,248 Q 8,248 8,188 L 8,68 Q 8,8 68,8 Z">
+        <GeometryDrawing.Brush>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#8174FF" Offset="0" />
+            <GradientStop Color="#5144D8" Offset="1" />
+          </LinearGradientBrush>
+        </GeometryDrawing.Brush>
+      </GeometryDrawing>
+      <!-- P: a text caret rising into a floating action bubble. -->
+      <GeometryDrawing Brush="#FFFFFF" Geometry="F0 M 66,58 L 142,58 C 177,58 196,76 196,104 C 196,133 177,150 142,150 L 98,150 L 98,195 L 66,195 Z M 98,86 L 98,122 L 139,122 C 156,122 164,116 164,104 C 164,92 156,86 139,86 Z" />
+      <!-- Selected text / quick-action bar, kept bold at tray sizes. -->
+      <GeometryDrawing Brush="#80F3DC" Geometry="M 126,173 L 186,173 Q 196,173 196,183 Q 196,193 186,193 L 126,193 Q 116,193 116,183 Q 116,173 126,173 Z" />
+    </DrawingGroup>
+  </DrawingImage.Drawing>
+</DrawingImage>

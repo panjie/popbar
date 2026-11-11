@@ -10,4 +10,4 @@ if (-not $testProcess.WaitForExit(20000)) { $testProcess.Kill(); throw 'Selectio
 if ($testProcess.ExitCode -ne 0) { throw 'Fixture crashed' }
 $report = Get-Content -LiteralPath $reportPath
 $report
-if (($report | Where-Object { $_ -like 'FAIL*' }) -or @($report | Where-Object { $_ -like 'PASS*' }).Count -ne 6) { throw 'Selection tests failed' }
+if (($report | Where-Object { $_ -like 'FAIL*' }) -or @($report | Where-Object { $_ -like 'PASS*' }).Count -ne 9) { throw 'Selection tests failed' }

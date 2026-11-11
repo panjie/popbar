@@ -19,32 +19,48 @@ internal sealed class ToolbarWindow:Window
         Title="PopBar · 划词工具条"; WindowStyle=WindowStyle.None; ResizeMode=ResizeMode.NoResize;
         ShowInTaskbar=false; ShowActivated=false; Topmost=true; SizeToContent=SizeToContent.WidthAndHeight;
         AllowsTransparency=true; Background=Brushes.Transparent; Ui.Style(this); Background=Brushes.Transparent;
-        Content=new Border { Background=Ui.Background,CornerRadius=new CornerRadius(10),BorderBrush=Ui.Surface,BorderThickness=new Thickness(1),Padding=new Thickness(5),Child=buttons };
+        var surface=new Border { CornerRadius=new CornerRadius(8),BorderThickness=new Thickness(1),Padding=new Thickness(3),Margin=new Thickness(6),Child=buttons,Effect=new System.Windows.Media.Effects.DropShadowEffect { BlurRadius=12,ShadowDepth=2,Opacity=0.25,Direction=270,Color=Colors.Black } };
+        surface.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush");
+        surface.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
+        Content=surface;
     }
     internal void Present(Selection selection,Native.Point point,Settings settings,Action configure,Action<PromptAction> ai,Action<string> notify)
     {
         buttons.Children.Clear();
-        void Add(string label,Action run) {
-            var button=Ui.Button(label,()=> { Hide(); try { run(); } catch(Exception ex) { notify(ex.Message); } });
+        void Separator() {
+            if(buttons.Children.Count==0 || buttons.Children[^1] is Border) return;
+            var separator=new Border { Width=1,Height=16,Margin=new Thickness(3,0,3,0),VerticalAlignment=VerticalAlignment.Center };
+            separator.SetResourceReference(Border.BackgroundProperty,"BorderBrush");
+            buttons.Children.Add(separator);
+        }
+        void Add(string glyph,string label,Action run,PromptAction? prompt=null) {
+            var button=Ui.GlyphButton(glyph,label,()=> { Hide(); try { run(); } catch(Exception ex) { notify(ex.Message); } });
+            if(prompt!=null && prompt.IconKind!=PromptIconKind.Default) button.Content=new Viewbox { Width=18,Height=18,Stretch=Stretch.Uniform,Child=PromptIcons.Create(prompt,out _) };
             button.Focusable=false; buttons.Children.Add(button);
         }
-        Add("复制",()=> { if(!Actions.Copy(selection.Text)) notify("剪贴板正忙，请重试。"); });
+        Add("\uE8C8","复制",()=> { if(!Actions.Copy(selection.Text)) notify("剪贴板正忙，请重试。"); });
         if(selection.Editable) {
-            Add("剪切",async ()=> {
+            Add("\uE8C6","剪切",async ()=> {
                 try { var current=await SelectionReader.Validate(selection); if(current?.Editable==true && Native.GetForegroundWindow()==selection.Window) Native.Shortcut(0x58); else notify("选区已改变，请重新选择。"); }
                 catch(Exception ex) { notify(ex.Message); }
             });
-            Add("粘贴",async ()=> {
+            Add("\uE77F","粘贴",async ()=> {
                 try { var current=await SelectionReader.Validate(selection); if(current?.Editable==true && Native.GetForegroundWindow()==selection.Window) Native.Shortcut(0x56); else notify("选区已改变，请重新选择。"); }
                 catch(Exception ex) { notify(ex.Message); }
             });
         }
+        Separator();
         var link=Actions.Link(selection.Text);
-        if(link!=null) Add("打开链接",()=>Actions.Open(link));
-        else if(selection.Text.Length<=4000) Add("搜索",()=>Actions.Open(Actions.SearchUri(settings.SearchUrl,selection.Text)));
-        var path=Actions.ExistingPath(selection.Text); if(path!=null) Add("文件位置",()=>Actions.Reveal(path));
-        foreach(var action in settings.Prompts.Take(12)) Add(action.Name,()=>ai(action));
-        Add("⚙",configure);
+        if(link!=null) Add("\uE8A7","打开链接",()=>Actions.Open(link));
+        else if(selection.Text.Length<=4000) Add("\uE721","搜索",()=>Actions.Open(Actions.SearchUri(settings.SearchUrl,selection.Text)));
+        var path=Actions.ExistingPath(selection.Text); if(path!=null) Add("\uE8B7","文件位置",()=>Actions.Reveal(path));
+        Separator();
+        foreach(var action in settings.Prompts.Take(12)) {
+            var glyph=action.Name switch { "翻译"=>"\uE774","解释"=>"\uE946","润色"=>"\uE70F",_=>"\uE73E" };
+            Add(glyph,action.Name,()=>ai(action),action);
+        }
+        Separator();
+        Add("\uE713","设置",configure);
         var screen=System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(point.X,point.Y)).WorkingArea;
         buttons.MaxWidth=Math.Min(850,screen.Width*0.75);
         // Position using physical pixels after WPF has measured the monitor-specific DPI.
@@ -54,8 +70,16 @@ internal sealed class ToolbarWindow:Window
         UpdateLayout();
         int w=(int)Math.Ceiling(ActualWidth*dpi.DpiScaleX),h=(int)Math.Ceiling(ActualHeight*dpi.DpiScaleY);
         int x=Math.Clamp(point.X-w/2,screen.Left,Math.Max(screen.Left,screen.Right-w));
-        int y=point.Y-h-14; if(y<screen.Top) y=point.Y+20;
-        y=Math.Clamp(y,screen.Top,Math.Max(screen.Top,screen.Bottom-h));
+        int y=VerticalPosition(point.Y,h,screen.Top,screen.Bottom,settings.ToolbarPosition);
         Native.SetWindowPos(Handle,-1,x,y,0,0,0x11);
+    }
+    internal static int VerticalPosition(int anchor,int height,int top,int bottom,ToolbarPlacement preference)
+    {
+        var above=anchor-height-14;
+        var below=anchor+20;
+        var y=preference==ToolbarPlacement.Below?below:above;
+        if(preference==ToolbarPlacement.Below && below+height>bottom) y=above;
+        else if(preference!=ToolbarPlacement.Below && above<top) y=below;
+        return Math.Clamp(y,top,Math.Max(top,bottom-height));
     }
 }

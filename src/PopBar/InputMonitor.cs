@@ -41,7 +41,7 @@ internal sealed class InputMonitor:IDisposable
                     bool drag=Math.Abs(data.Point.X-start.X)>=5||Math.Abs(data.Point.Y-start.Y)>=5;
                     bool multi=Environment.TickCount64-lastUp<=Native.GetDoubleClickTime() && Math.Abs(data.Point.X-lastClick.X)<5 && Math.Abs(data.Point.Y-lastClick.Y)<5;
                     lastUp=Environment.TickCount64; lastClick=data.Point;
-                    if((drag||multi||startShift) && !Native.Down(0x5B) && !Native.Down(0x5C)) Selected?.Invoke(startWindow,data.Point,startShift&&Native.Down(0x10),false);
+                    if((drag||multi||startShift) && !Native.Down(0x5B) && !Native.Down(0x5C)) Selected?.Invoke(startWindow,data.Point,startShift||Native.Down(0x10),false);
                 } else if(msg is 0x204 or 0x207 or 0x20A or 0x20E) {
                     if(!Native.OwnWindow(Native.GetAncestor(Native.WindowFromPoint(data.Point),2))) Dismiss?.Invoke();
                 }
