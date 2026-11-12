@@ -10,6 +10,8 @@ internal sealed class ToolbarWindow:Window
     internal const int MaxIdleOpacityPercent=100;
     internal const double DefaultIdleOpacity=DefaultIdleOpacityPercent/100.0;
     readonly Border surface;
+    readonly Border borderGlow;
+    readonly MatrixTransform glowPosition=new();
     readonly WrapPanel buttons=new();
     readonly Func<Settings,string,IReadOnlySet<SmartActionKind>,CancellationToken,Task<IReadOnlyList<SmartAction>>> analyze;
     CancellationTokenSource? analysis;
@@ -36,8 +38,25 @@ internal sealed class ToolbarWindow:Window
         surface.MouseLeave+=(_,_)=>Fade(IdleOpacity);
         surface.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush");
         surface.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
-        Content=surface;
-        IsVisibleChanged+=(_,_)=> { if(!IsVisible) CancelAnalysis(); };
+        // Keep the glow outside the surface's opacity so it stays visible at low idle settings.
+        borderGlow=new Border {
+            Name="ToolbarBorderGlow",CornerRadius=surface.CornerRadius,BorderThickness=surface.BorderThickness,
+            Margin=surface.Margin,IsHitTestVisible=false,Visibility=Visibility.Hidden,
+            OpacityMask=new RadialGradientBrush {
+                MappingMode=BrushMappingMode.Absolute,Center=new Point(0,0),GradientOrigin=new Point(0,0),
+                RadiusX=32,RadiusY=32,Transform=glowPosition,
+                GradientStops={new GradientStop(Color.FromArgb(210,255,255,255),0),
+                    new GradientStop(Color.FromArgb(110,255,255,255),0.45),new GradientStop(Colors.Transparent,1)}
+            }
+        };
+        borderGlow.SetResourceReference(Border.BorderBrushProperty,"AccentBrush");
+        borderGlow.SizeChanged+=(_,_)=> { if(borderGlow.IsVisible) AnimateBorderGlow(); };
+        Content=new Grid { Children={surface,borderGlow} };
+        IsVisibleChanged+=(_,_)=> {
+            if(IsVisible) return;
+            SetBorderGlow(false);
+            CancelAnalysis();
+        };
     }
     void CancelAnalysis()
     {
@@ -53,6 +72,31 @@ internal sealed class ToolbarWindow:Window
     void Fade(double target)
     {
         surface.BeginAnimation(UIElement.OpacityProperty,new DoubleAnimation(target,TimeSpan.FromMilliseconds(120)) { EasingFunction=new QuadraticEase { EasingMode=EasingMode.EaseOut } });
+        SetBorderGlow(target<1);
+    }
+    void SetBorderGlow(bool idle)
+    {
+        var show=idle && IsVisible && IdleOpacity<1 && SystemParameters.ClientAreaAnimation;
+        var visibility=show?Visibility.Visible:Visibility.Hidden;
+        if(borderGlow.Visibility==visibility) return;
+        borderGlow.Visibility=visibility;
+        if(show) AnimateBorderGlow();
+        else glowPosition.BeginAnimation(MatrixTransform.MatrixProperty,null);
+    }
+    void AnimateBorderGlow()
+    {
+        var inset=borderGlow.BorderThickness.Left/2;
+        var width=borderGlow.ActualWidth-2*inset;
+        var height=borderGlow.ActualHeight-2*inset;
+        if(width<=0 || height<=0) return;
+        var radius=borderGlow.CornerRadius.TopLeft-inset;
+        var outline=new RectangleGeometry(new Rect(inset,inset,width,height),radius,radius);
+        var path=PathGeometry.CreateFromGeometry(outline);
+        path.Freeze();
+        var duration=TimeSpan.FromSeconds(Math.Max(5,2*(width+height)/115));
+        glowPosition.BeginAnimation(MatrixTransform.MatrixProperty,new MatrixAnimationUsingPath {
+            PathGeometry=path,Duration=duration,RepeatBehavior=RepeatBehavior.Forever
+        });
     }
     internal static int NormalizeIdleOpacity(int percent) =>
         Math.Clamp(percent,MinIdleOpacityPercent,MaxIdleOpacityPercent);
@@ -175,6 +219,7 @@ internal sealed class ToolbarWindow:Window
             Native.SetWindowPos(Handle,-1,left.Value,y,0,0,0x11);
         }
         Position();
+        SetBorderGlow(true);
         if(indicator!=null) _=AppendAnalyzed(indicator);
 
         async Task AppendAnalyzed(Border pendingIndicator)

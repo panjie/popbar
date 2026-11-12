@@ -179,8 +179,19 @@ internal static class UiChecks
         try {
             System.Windows.Forms.Cursor.Position=new System.Drawing.Point(0,0);
             toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings(),()=>{},_=>{},_=>{});
-            var toolbarSurface=(Border)toolbar.Content;
-            Check(toolbarSurface.Name=="ToolbarSurface" && Math.Abs(toolbarSurface.Opacity-ToolbarWindow.DefaultIdleOpacity)<0.001,"toolbar starts semi-transparent");
+            var toolbarSurface=FindNamed<Border>(toolbar,"ToolbarSurface");
+            Check(Math.Abs(toolbarSurface.Opacity-ToolbarWindow.DefaultIdleOpacity)<0.001,"toolbar starts semi-transparent");
+            var borderGlow=FindNamed<Border>(toolbar,"ToolbarBorderGlow");
+            var glowPosition=(MatrixTransform)borderGlow.OpacityMask.Transform;
+            var animationsEnabled=SystemParameters.ClientAreaAnimation;
+            Check(!borderGlow.IsHitTestVisible && borderGlow.IsVisible==animationsEnabled &&
+                glowPosition.HasAnimatedProperties==animationsEnabled,"idle glow respects system animation settings and lets clicks through");
+            if(animationsEnabled) {
+                PumpFor(50);
+                var startingPosition=glowPosition.Matrix;
+                PumpFor(200);
+                Check(glowPosition.Matrix!=startingPosition,"idle glow moves along the border");
+            }
             var panel=Descendants<WrapPanel>(toolbar).Single();
             var buttons=panel.Children.OfType<Button>().ToList();
             var names=new[] { "复制","搜索","翻译","解释","润色","设置" };
@@ -195,6 +206,7 @@ internal static class UiChecks
             toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent });
             PumpFor(250);
             Check(Math.Abs(toolbarSurface.Opacity-1)<0.001,"toolbar hover becomes opaque");
+            Check(!borderGlow.IsVisible && !glowPosition.HasAnimatedProperties,"hover stops the border glow");
             toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings { ToolbarIdleOpacity=65,Prompts=new(){emojiPrompt} },()=>{},_=>{},_=>{});
             Check(!toolbarSurface.HasAnimatedProperties && Math.Abs(toolbarSurface.Opacity-0.65)<0.001,
                 "toolbar presentation resets to the configured idle opacity");
@@ -206,6 +218,7 @@ internal static class UiChecks
             toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseLeaveEvent });
             PumpFor(250);
             Check(Math.Abs(toolbarSurface.Opacity-0.65)<0.001,"toolbar leave returns to the configured idle opacity");
+            Check(borderGlow.IsVisible==animationsEnabled && glowPosition.HasAnimatedProperties==animationsEnabled,"mouse leave restores the idle glow");
             Capture(toolbar,"toolbar-emoji");
             toolbar.Present(new Selection(0,"https://example.com/docs",false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
             Check(Descendants<Button>(toolbar).Count(button=>(button.ToolTip as string)=="打开链接")==1 && !Descendants<Button>(toolbar).Any(button=>(button.ToolTip as string)?.Contains('\n')==true),"URL uses only the original link button");
@@ -230,6 +243,10 @@ internal static class UiChecks
             PumpFor(50); Capture(toolbar,"toolbar-currency-icon");
             toolbar.Present(new Selection(0,"ordinary text",false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
             Check(!Descendants<Button>(toolbar).Any(button=>(button.ToolTip as string)?.StartsWith("执行命令")==true),"smart buttons refresh when the selection changes");
+            toolbar.Hide();
+            Check(!borderGlow.IsVisible && !glowPosition.HasAnimatedProperties,"hiding the toolbar stops the glow animation");
+            toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point(100,100),new Settings { ToolbarIdleOpacity=100 },()=>{},_=>{},_=>{});
+            Check(!borderGlow.IsVisible && !glowPosition.HasAnimatedProperties,"fully opaque toolbar has no glow");
         } finally { toolbar.Close(); System.Windows.Forms.Cursor.Position=toolbarCursor; }
 
         foreach(var (kind,smartInput,expected) in new[]{
