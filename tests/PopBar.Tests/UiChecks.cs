@@ -189,6 +189,7 @@ internal static class UiChecks
             Check(buttons.Select(button=>button.ToolTip as string).SequenceEqual(names) && buttons.Select(AutomationProperties.GetName).SequenceEqual(names),"toolbar button names and order");
             Check(buttons.All(button=>!button.Focusable) && !toolbar.ShowActivated,"toolbar does not take focus");
             Check(panel.Children.OfType<Border>().Any(border=>border.Width==1),"toolbar visual group separators");
+            Check(!panel.Children.OfType<Border>().Any(border=>border.Name=="SmartActionsDivider"),"ordinary text has no smart group");
             Check(!buttons.Any(button=>new[]{"剪切","粘贴","替换原文"}.Contains(button.ToolTip as string)),"read-only selection hides edit actions");
             Capture(toolbar,"toolbar");
             toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent });
@@ -206,7 +207,120 @@ internal static class UiChecks
             PumpFor(250);
             Check(Math.Abs(toolbarSurface.Opacity-0.65)<0.001,"toolbar leave returns to the configured idle opacity");
             Capture(toolbar,"toolbar-emoji");
+            toolbar.Present(new Selection(0,"https://example.com/docs",false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
+            Check(Descendants<Button>(toolbar).Count(button=>(button.ToolTip as string)=="打开链接")==1 && !Descendants<Button>(toolbar).Any(button=>(button.ToolTip as string)?.Contains('\n')==true),"URL uses only the original link button");
+            Check(!panel.Children.OfType<Border>().Any(border=>border.Name=="SmartActionsDivider"),"no empty smart group divider for URLs");
+            toolbar.Present(new Selection(0,AppContext.BaseDirectory,false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
+            Check(Descendants<Button>(toolbar).Count(button=>(button.ToolTip as string)=="文件位置")==1 && !Descendants<Button>(toolbar).Any(button=>(button.ToolTip as string)?.Contains('\n')==true),"path uses only the original location button");
+            foreach(var sample in new[]{("git status","执行命令（CMD）\ngit status"),("Get-ChildItem","执行命令（PowerShell）\nGet-ChildItem")}) {
+                toolbar.Present(new Selection(0,sample.Item1,false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
+                Check(Descendants<Button>(toolbar).Any(button=>(button.ToolTip as string)==sample.Item2),"smart toolbar action previews its target: "+sample.Item1);
+            }
+            Capture(toolbar,"toolbar-smart-command");
+            toolbar.Present(new Selection(0,"72°F",false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
+            var unitButtons=Descendants<Button>(toolbar).ToList();
+            Check((unitButtons[^1].ToolTip as string)!.StartsWith("单位转换\n")&&(unitButtons[^2].ToolTip as string)=="设置","all smart buttons occupy the final toolbar positions");
+            var smartDivider=panel.Children.OfType<Border>().Single(border=>border.Name=="SmartActionsDivider");
+            Check(smartDivider.Width==2&&smartDivider.Margin.Left>=12&&panel.Children.IndexOf(smartDivider)>panel.Children.IndexOf(unitButtons[^2]),"smart group follows settings with a distinct wide divider");
+            PumpFor(50);
+            Capture(toolbar,"toolbar-smart-units");
+            toolbar.Present(new Selection(0,"500百万円",false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
+            var currencyIcon=(TextBlock)Descendants<Button>(toolbar).Single(button=>(button.ToolTip as string)!.StartsWith("汇率转换\n")).Content;
+            Check(currencyIcon.Text=="¥"&&currencyIcon.FontFamily.Equals(UiTypography.ForLanguage(UiText.Culture)),"currency icon uses a regular font currency symbol");
+            PumpFor(50); Capture(toolbar,"toolbar-currency-icon");
+            toolbar.Present(new Selection(0,"ordinary text",false,null,null),new Native.Point(100,100),new Settings(),()=>{},_=>{},_=>{});
+            Check(!Descendants<Button>(toolbar).Any(button=>(button.ToolTip as string)?.StartsWith("执行命令")==true),"smart buttons refresh when the selection changes");
         } finally { toolbar.Close(); System.Windows.Forms.Cursor.Position=toolbarCursor; }
+
+        foreach(var (kind,smartInput,expected) in new[]{
+            (SmartActionKind.Calculate,"128*0.85","108.8"),
+            (SmartActionKind.Unit,"32°F","= 0 °C"),
+            (SmartActionKind.Json,"{\"a\":1}","\n")
+        }) {
+            var smartPreview=new SmartResultWindow(new SmartAction(kind,smartInput),new Selection(0,smartInput,false,null,null),new Settings());
+            try {
+                smartPreview.Show(); PumpFor(50);
+                Check(FindNamed<TextBox>(smartPreview,"SmartOutput").Text.Contains(expected),"smart preview renders "+kind);
+                Check(FindNamed<Button>(smartPreview,"SmartCopy").IsEnabled&&FindNamed<Button>(smartPreview,"SmartReplace").Visibility==Visibility.Collapsed,"smart preview enables copy and protects read-only source "+kind);
+                Capture(smartPreview,"smart-preview-"+kind);
+            } finally { smartPreview.Close(); }
+        }
+        var invalidPreview=new SmartResultWindow(new SmartAction(SmartActionKind.Calculate,"1/0"),new Selection(0,"1/0",true,null,null),new Settings());
+        try {
+            invalidPreview.Show(); PumpFor(20);
+            Check(!FindNamed<Button>(invalidPreview,"SmartCopy").IsEnabled&&!FindNamed<Button>(invalidPreview,"SmartReplace").IsEnabled&&FindNamed<TextBlock>(invalidPreview,"SmartStatus").Text.StartsWith("转换失败"),"failed calculation disables stale copy and replace");
+        } finally { invalidPreview.Close(); }
+
+        var currencyPreview=new SmartResultWindow(new SmartAction(SmartActionKind.Currency,"$100"),new Selection(0,"$100",true,null,null),new Settings(),
+            (amounts,target,token)=>target=="USD"?Task.FromException<string>(new IOException("offline")):
+                CurrencyConversion.Convert(amounts,target,token,(from,to,ct)=>Task.FromResult(new CurrencyRate(from,to,to=="JPY"?150:7.25m,new DateOnly(2026,1,2)))));
+        try {
+            currencyPreview.Show(); PumpFor(30);
+            Check(FindNamed<TextBox>(currencyPreview,"SmartOutput").Text.Contains("725.00 CNY")&&FindNamed<Button>(currencyPreview,"SmartReplace").IsEnabled,"currency preview renders referenced result for editable source");
+            FindNamed<ComboBox>(currencyPreview,"SmartMode").SelectedItem="JPY";
+            Check(FindNamed<TextBox>(currencyPreview,"SmartOutput").Text.Contains("15,000 JPY"),"currency preview target switches");
+            Capture(currencyPreview,"smart-preview-Currency");
+            FindNamed<ComboBox>(currencyPreview,"SmartMode").SelectedItem="USD";
+            Check(FindNamed<TextBox>(currencyPreview,"SmartOutput").Text.Length==0&&!FindNamed<Button>(currencyPreview,"SmartCopy").IsEnabled&&FindNamed<TextBlock>(currencyPreview,"SmartStatus").Text.Contains("失败"),"network failure clears stale currency result and disables copy");
+        } finally { currencyPreview.Close(); }
+
+        const string aiMoneyText="売上は五億円です。";
+        var aiMoneySettings=new Settings { Model="test-model" };
+        var aiMoneyAction=new SmartAction(SmartActionKind.Currency,aiMoneyText) {
+            Amounts=new[]{new MoneyAmount(500000000m,"JPY","五億円",false)}
+        };
+        var aiMoneyPreview=new SmartResultWindow(aiMoneyAction,new Selection(0,aiMoneyText,false,null,null),aiMoneySettings,
+            (amounts,target,token)=>CurrencyConversion.Convert(amounts,target,token,
+                (from,to,_)=>Task.FromResult(new CurrencyRate(from,to,0.05m,new DateOnly(2026,1,2)))));
+        try {
+            aiMoneyPreview.Show(); PumpFor(30);
+            var aiOutput=FindNamed<TextBox>(aiMoneyPreview,"SmartOutput");
+            Check(aiOutput.Text.Contains("五億円")&&aiOutput.Text.Contains("25,000,000.00 CNY"),"AI money preview shows source evidence and conversion");
+            FindNamed<ComboBox>(aiMoneyPreview,"SmartMode").SelectedItem="JPY";
+            Check(aiOutput.Text.Contains("500,000,000 JPY"),"switching currencies reuses the AI extraction");
+        } finally { aiMoneyPreview.Close(); }
+
+        var firstAnalysis=new TaskCompletionSource<IReadOnlyList<SmartAction>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var lateAnalysis=new TaskCompletionSource<IReadOnlyList<SmartAction>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var lateToken=new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var aiToolbar=new ToolbarWindow((_,text,_,token)=> {
+            if(text==aiMoneyText) return firstAnalysis.Task;
+            if(text=="no matches") return Task.FromResult<IReadOnlyList<SmartAction>>(Array.Empty<SmartAction>());
+            if(text=="analysis failed") return Task.FromException<IReadOnlyList<SmartAction>>(new IOException("offline"));
+            lateToken.TrySetResult(token);
+            return lateAnalysis.Task;
+        });
+        try {
+            SmartAction? clicked=null;
+            var point=new Native.Point(100,100);
+            aiToolbar.Present(new Selection(0,aiMoneyText,false,null,null),point,aiMoneySettings,()=>{},_=>{},_=>{},action=>clicked=action);
+            Check(aiToolbar.IsVisible&&!Descendants<Button>(aiToolbar).Any(button=>(button.ToolTip as string)!.StartsWith("汇率转换")),"toolbar appears before the AI result");
+            var aiPanel=Descendants<WrapPanel>(aiToolbar).Single();
+            Check(aiPanel.Children[^1] is Border { Name:"SmartAnalysisIndicator",IsVisible:true },"analysis indicator occupies the rightmost slot");
+            firstAnalysis.SetResult(new[]{aiMoneyAction});
+            PumpFor(300);
+            var moneyButton=Descendants<Button>(aiToolbar).Last();
+            Check((moneyButton.ToolTip as string)!.StartsWith("汇率转换") &&
+                  !aiPanel.Children.OfType<Border>().Any(border=>border.Name=="SmartAnalysisIndicator"),"currency button replaces the analysis indicator");
+            moneyButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(clicked==aiMoneyAction,"appended button uses the extracted amounts");
+
+            foreach(var text in new[]{"no matches","analysis failed"}) {
+                aiToolbar.Present(new Selection(0,text,false,null,null),point,aiMoneySettings,()=>{},_=>{},_=>{});
+                PumpFor(300);
+                Check(!aiPanel.Children.OfType<Border>().Any(border=>border.Name is "SmartAnalysisIndicator" or "SmartActionsDivider"),
+                    "analysis indicator and empty divider are cleared: "+text);
+            }
+
+            aiToolbar.Present(new Selection(0,"三万米",false,null,null),point,aiMoneySettings,()=>{},_=>{},_=>{});
+            PumpFor(300);
+            aiToolbar.Present(new Selection(0,"new selection",false,null,null),point,new Settings(),()=>{},_=>{},_=>{});
+            Check(lateToken.Task.IsCompletedSuccessfully&&lateToken.Task.Result.IsCancellationRequested,"new selection cancels old analysis");
+            lateAnalysis.SetResult(new[]{aiMoneyAction});
+            PumpFor(100);
+            Check(!Descendants<Button>(aiToolbar).Any(button=>(button.ToolTip as string)!.StartsWith("汇率转换")) &&
+                  !aiPanel.Children.OfType<Border>().Any(border=>border.Name=="SmartAnalysisIndicator"),"late results cannot add buttons or an indicator to a newer selection");
+        } finally { aiToolbar.Close(); }
 
         var languageSettings=new Settings();
         var builtIn=languageSettings.Prompts[0];
@@ -336,6 +450,11 @@ internal static class UiChecks
             var position=FindNamed<ComboBox>(settingsWindow,"ToolbarPositionSelector");
             var resultFont=FindNamed<ComboBox>(settingsWindow,"ResultFontSelector");
             var resultSize=FindNamed<ComboBox>(settingsWindow,"ResultFontSizeSelector");
+            var currencyTarget=FindNamed<ComboBox>(settingsWindow,"CurrencyTargetSelector");
+            var currencySource=FindNamed<ComboBox>(settingsWindow,"CurrencySourceSelector");
+            Check(FindNamed<CheckBox>(settingsWindow,"CurrencyConversionEnabled").IsChecked==true&&currencyTarget.Items.Cast<string>().SequenceEqual(new[]{"CNY","JPY","USD"}),"currency settings enabled with three target currencies");
+            currencyTarget.SelectedItem="JPY"; currencySource.SelectedItem="USD";
+            Check(sourceSettings.CurrencyTarget=="CNY"&&sourceSettings.CurrencySource=="CNY","currency settings stay a draft until saved");
             Check(Equals(resultFont.SelectedValue,chosenFont.Source) && Equals(resultSize.SelectedItem,18),"settings load saved result font and size");
             Check(position.Items.Cast<ComboBoxItem>().Select(item=>item.Tag).SequenceEqual(new object[]{ToolbarPlacement.Above,ToolbarPlacement.Below}) && position.SelectedIndex==0,"toolbar placement settings options");
             position.SelectedIndex=1;

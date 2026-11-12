@@ -16,6 +16,7 @@ public partial class App:Application
     Settings settings=new();
     SettingsWindow? settingsWindow;
     ResultWindow? resultWindow;
+    SmartResultWindow? smartResultWindow;
     DispatcherTimer? timer;
     int generation;
     nint selectionWindow;
@@ -70,7 +71,8 @@ public partial class App:Application
         var ownResult=System.Windows.Interop.HwndSource.FromHwnd(window)?.RootVisual as ResultWindow;
         var process=Native.ProcessName(window);
         if(settings.Excludes(process)||(!manual&&!settings.Enabled)||(!manual&&settings.TerminalShift&&Terminal(process)&&!shift)) return;
-        var version=++generation; probing=true;
+        Dismiss();
+        var version=generation; probing=true;
         try {
             await Task.Delay(manual?160:100);
             if(generation!=version || Native.GetForegroundWindow()!=window) return;
@@ -93,7 +95,13 @@ public partial class App:Application
                 resultWindow=preview;
                 preview.Closed+=(_,_)=> { if(resultWindow==preview) resultWindow=null; };
                 WindowPresentation.ShowForeground(preview);
-            },Notify);
+            },Notify,action=> {
+                smartResultWindow?.Close();
+                var preview=new SmartResultWindow(action,selection,settings);
+                smartResultWindow=preview;
+                preview.Closed+=(_,_)=> { if(smartResultWindow==preview) smartResultWindow=null; };
+                WindowPresentation.ShowForeground(preview);
+            });
         } catch { if(manual) Notify(T("SelectionReadFailed")); }
         finally { probing=false; }
     }
@@ -177,6 +185,6 @@ public partial class App:Application
     protected override void OnExit(ExitEventArgs e)
     {
         Microsoft.Win32.SystemEvents.UserPreferenceChanged-=SystemPreferenceChanged;
-        timer?.Stop(); input?.Dispose(); resultWindow?.Close(); toolbar?.Close(); tray?.Dispose(); trayIcon?.Dispose(); instance?.Dispose(); base.OnExit(e);
+        timer?.Stop(); input?.Dispose(); resultWindow?.Close(); smartResultWindow?.Close(); toolbar?.Close(); tray?.Dispose(); trayIcon?.Dispose(); instance?.Dispose(); base.OnExit(e);
     }
 }

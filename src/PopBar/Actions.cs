@@ -13,7 +13,13 @@ public static class Actions
     public static Uri? Link(string text)
     {
         text=text.Trim(); if(text.Any(char.IsWhiteSpace)||text.Length>8192) return null;
-        if(!text.Contains("://",StringComparison.Ordinal)) text="https://"+text;
+        if(!text.Contains("://",StringComparison.Ordinal)) {
+            if(UnitConversion.IsQuantity(text)||MoneyParser.IsAmount(text)) return null;
+            // Uri accepts integers and shortened dotted numbers as IPv4 hosts; those are usually numbers or expressions here.
+            var host=text.Split('/','?',':','#')[0];
+            if(host.All(c=>char.IsAsciiDigit(c)||c=='.') && host.Count(c=>c=='.')!=3) return null;
+            text="https://"+text;
+        }
         if(Uri.TryCreate(text,UriKind.Absolute,out var u) && (u.Scheme=="https"||u.Scheme=="http") && u.UserInfo.Length==0 && (u.Host.Contains('.')||u.IsLoopback)) return u;
         return null;
     }

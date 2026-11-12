@@ -468,4 +468,36 @@
   <data name="WaitingForResponse" xml:space="preserve">
     <value>応答を待機中…</value>
   </data>
+  <data name="RunCommand" xml:space="preserve"><value>コマンドを実行（CMD）</value></data>
+  <data name="RunPowerShell" xml:space="preserve"><value>コマンドを実行（PowerShell）</value></data>
+  <data name="SmartCalculate" xml:space="preserve"><value>計算</value></data>
+  <data name="SmartJson" xml:space="preserve"><value>JSON 整形</value></data>
+  <data name="SmartJsonCompact" xml:space="preserve"><value>JSON 圧縮</value></data>
+  <data name="SmartCurrency" xml:space="preserve"><value>通貨換算</value></data>
+  <data name="SmartInvalidInput" xml:space="preserve"><value>入力形式が無効です。</value></data>
+  <data name="SmartExponent" xml:space="preserve"><value>指数は -100 から 100 の整数にしてください。</value></data>
+  <data name="SmartAssumedCurrency" xml:space="preserve"><value>「{0}」の通貨が不明なため、既定の換算元 {1} を使用。</value></data>
+  <data name="SmartRateSource" xml:space="preserve"><value>出典：Frankfurter · 参考レート（リアルタイム価格ではありません）</value></data>
+  <data name="SmartMoneyLimit" xml:space="preserve"><value>先頭の 20 件の金額まで処理します。</value></data>
+  <data name="SmartRateFailed" xml:space="preserve"><value>レートの取得に失敗またはタイムアウトしました。接続を確認して再試行してください。</value></data>
+  <data name="SmartRateLoading" xml:space="preserve"><value>参考レートを取得中…</value></data>
+  <data name="SmartRateHelp" xml:space="preserve"><value>出典と日付を表示しています。実際の換算額は銀行や決済サービスで確認してください。</value></data>
+  <data name="SmartLocalProcessing" xml:space="preserve"><value>このデバイスで処理しました。</value></data>
+  <data name="SmartTransformFailed" xml:space="preserve"><value>変換に失敗しました：{0}</value></data>
+  <data name="SmartRetry" xml:space="preserve"><value>再試行</value></data>
+  <data name="SmartConversionMode" xml:space="preserve"><value>変換方法</value></data>
+  <data name="SmartButtons" xml:space="preserve"><value>スマートボタン</value></data>
+  <data name="SmartCurrencyEnabled" xml:space="preserve"><value>通貨換算ボタンを自動表示</value></data>
+  <data name="SmartCurrencyTarget" xml:space="preserve"><value>既定の換算先（CNY 人民元 / JPY 日本円 / USD 米ドル）</value></data>
+  <data name="SmartCurrencySource" xml:space="preserve"><value>換算元の通貨が不明な場合</value></data>
+  <data name="SmartCurrencySettingsHelp" xml:space="preserve"><value>¥、￥や「price 100」は既定の換算元を使用。$ は USD、元は CNY。クリック時に通貨コードのみ送信し、金額や原文は送信しません。レートはメモリに 1 時間保存します。</value></data>
+  <data name="SmartUnit" xml:space="preserve"><value>単位変換</value></data>
+  <data name="SmartAbsoluteZero" xml:space="preserve"><value>絶対零度より低い温度は変換できません。</value></data>
+  <data name="SmartUnitLimit" xml:space="preserve"><value>先頭の 20 件の数量まで変換します。</value></data>
+  <data name="SmartAiMoneySource" xml:space="preserve"><value>AIが参照した原文：「{0}」</value></data>
+  <data name="SmartAiMoneyReview" xml:space="preserve"><value>AIが抽出した金額と通貨を原文と照合してください。換算には参考レートを使用しています。</value></data>
+  <data name="SmartAiAutomatic" xml:space="preserve"><value>AIでスマートボタンを自動追加</value></data>
+  <data name="SmartAiAnalyzing" xml:space="preserve"><value>選択したテキストを分析中</value></data>
+  <data name="SmartAiAutomaticHelp" xml:space="preserve"><value>AIモデルを設定すると、ツールバーの表示時に選択テキストを設定済みのサービスに自動送信し、利用可能なスマート操作を判定します。</value></data>
+  <data name="SmartAiResultReview" xml:space="preserve"><value>認識結果を原文と照合してください。</value></data>
 </root>

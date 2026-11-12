@@ -48,6 +48,10 @@ public sealed class Settings
     public int ToolbarIdleOpacity { get; set; } = 35;
     public bool Enabled { get; set; } = true;
     public bool TerminalShift { get; set; } = true;
+    public bool CurrencyConversion { get; set; } = true;
+    public bool AiSmartAnalysis { get; set; } = true;
+    public string CurrencyTarget { get; set; } = "CNY";
+    public string CurrencySource { get; set; } = "CNY";
     public bool AutoCloseResultOnDeactivate { get; set; } = true;
     public string ResultFontFamily { get; set; } = "";
     public int ResultFontSize { get; set; } = ResultTypography.DefaultSize;

@@ -215,6 +215,25 @@ internal sealed class SettingsWindow:Window
         UpdateFontPreview();
         general.Children.Add(autoCloseResult);
 
+        Section(general,T("SmartButtons"));
+        var currencyEnabled=new CheckBox { Name="CurrencyConversionEnabled",Content=T("SmartCurrencyEnabled"),IsChecked=settings.CurrencyConversion };
+        general.Children.Add(currencyEnabled);
+        var targetLabel=FieldLabel(general,T("SmartCurrencyTarget"));
+        var currencyTarget=new ComboBox { Name="CurrencyTargetSelector",ItemsSource=new[]{"CNY","JPY","USD"},SelectedItem=settings.CurrencyTarget };
+        currencyTarget.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(currencyTarget,targetLabel);
+        if(currencyTarget.SelectedIndex<0) currencyTarget.SelectedIndex=0;
+        general.Children.Add(currencyTarget);
+        var sourceLabel=FieldLabel(general,T("SmartCurrencySource"));
+        var currencySource=new ComboBox { Name="CurrencySourceSelector",ItemsSource=MoneyParser.Currencies,SelectedItem=MoneyParser.Normalize(settings.CurrencySource) };
+        currencySource.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(currencySource,sourceLabel);
+        general.Children.Add(currencySource);
+        general.Children.Add(Text(T("SmartCurrencySettingsHelp"),12,true));
+        var aiSmartAnalysis=new CheckBox { Name="AiSmartAnalysisEnabled",Content=T("SmartAiAutomatic"),IsChecked=settings.AiSmartAnalysis,Margin=new Thickness(0,10,0,0) };
+        general.Children.Add(aiSmartAnalysis);
+        general.Children.Add(Text(T("SmartAiAutomaticHelp"),12,true));
+
         Section(general,T("SearchAndExclusions"));
         var search=Field(general,T("SearchUrl"),settings.SearchUrl,T("SearchUrlHelp"));
         var excluded=Field(general,T("ExcludedProcesses"),settings.ExcludedApps,T("ExcludedProcessesHelp"));
@@ -390,6 +409,10 @@ internal sealed class SettingsWindow:Window
                 next.ResultFontFamily=resultFont.SelectedValue as string??"";
                 next.ResultFontSize=SelectedResultSize();
                 next.DeepSeekFlashThinking=thinking.IsChecked==true;
+                next.CurrencyConversion=currencyEnabled.IsChecked==true;
+                next.AiSmartAnalysis=aiSmartAnalysis.IsChecked==true;
+                next.CurrencyTarget=currencyTarget.SelectedItem as string??"CNY";
+                next.CurrencySource=currencySource.SelectedItem as string??"CNY";
                 if(clear.IsChecked==true) next.SetKey("");
                 if(secret.Password.Length>0) next.SetKey(secret.Password);
                 next.Save(); saved(next);

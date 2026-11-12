@@ -468,4 +468,36 @@
   <data name="WaitingForResponse" xml:space="preserve">
     <value>等待服务响应…</value>
   </data>
+  <data name="RunCommand" xml:space="preserve"><value>执行命令（CMD）</value></data>
+  <data name="RunPowerShell" xml:space="preserve"><value>执行命令（PowerShell）</value></data>
+  <data name="SmartCalculate" xml:space="preserve"><value>计算</value></data>
+  <data name="SmartJson" xml:space="preserve"><value>JSON 格式化</value></data>
+  <data name="SmartJsonCompact" xml:space="preserve"><value>JSON 压缩</value></data>
+  <data name="SmartCurrency" xml:space="preserve"><value>汇率转换</value></data>
+  <data name="SmartInvalidInput" xml:space="preserve"><value>输入格式无效。</value></data>
+  <data name="SmartExponent" xml:space="preserve"><value>指数必须为 -100 到 100 之间的整数。</value></data>
+  <data name="SmartAssumedCurrency" xml:space="preserve"><value>「{0}」未明确币种，按默认源币种 {1} 计算。</value></data>
+  <data name="SmartRateSource" xml:space="preserve"><value>来源：Frankfurter · 参考汇率（非实时成交价）</value></data>
+  <data name="SmartMoneyLimit" xml:space="preserve"><value>最多处理前 20 个金额。</value></data>
+  <data name="SmartRateFailed" xml:space="preserve"><value>汇率查询失败或超时，请检查网络后重试。</value></data>
+  <data name="SmartRateLoading" xml:space="preserve"><value>正在查询参考汇率…</value></data>
+  <data name="SmartRateHelp" xml:space="preserve"><value>结果包含来源与日期；实际兑换金额以银行或支付平台为准。</value></data>
+  <data name="SmartLocalProcessing" xml:space="preserve"><value>在本机处理结果。</value></data>
+  <data name="SmartTransformFailed" xml:space="preserve"><value>转换失败：{0}</value></data>
+  <data name="SmartRetry" xml:space="preserve"><value>重试</value></data>
+  <data name="SmartConversionMode" xml:space="preserve"><value>转换方式</value></data>
+  <data name="SmartButtons" xml:space="preserve"><value>智能按钮</value></data>
+  <data name="SmartCurrencyEnabled" xml:space="preserve"><value>自动显示汇率转换按钮</value></data>
+  <data name="SmartCurrencyTarget" xml:space="preserve"><value>默认目标币种（CNY 人民币 / JPY 日元 / USD 美元）</value></data>
+  <data name="SmartCurrencySource" xml:space="preserve"><value>币种不明确时使用</value></data>
+  <data name="SmartCurrencySettingsHelp" xml:space="preserve"><value>¥、￥和“价格 100”等内容使用默认源币种；$ 按美元、元按人民币处理。仅点击后联网查询，发送币种代码，不发送金额或原文。汇率在内存缓存 1 小时。</value></data>
+  <data name="SmartUnit" xml:space="preserve"><value>单位转换</value></data>
+  <data name="SmartAbsoluteZero" xml:space="preserve"><value>温度不能低于绝对零度。</value></data>
+  <data name="SmartUnitLimit" xml:space="preserve"><value>最多转换前 20 个数量。</value></data>
+  <data name="SmartAiMoneySource" xml:space="preserve"><value>AI 识别原文：「{0}」</value></data>
+  <data name="SmartAiMoneyReview" xml:space="preserve"><value>请对照原文核对 AI 识别的金额和币种。换算使用参考汇率。</value></data>
+  <data name="SmartAiAutomatic" xml:space="preserve"><value>自动用 AI 补充智能按钮</value></data>
+  <data name="SmartAiAnalyzing" xml:space="preserve"><value>正在分析选中文字</value></data>
+  <data name="SmartAiAutomaticHelp" xml:space="preserve"><value>配置 AI 模型后，工具栏显示时会自动将选中文字发送给已配置的服务，以识别可用的智能操作。</value></data>
+  <data name="SmartAiResultReview" xml:space="preserve"><value>请对照原文核对识别结果。</value></data>
 </root>

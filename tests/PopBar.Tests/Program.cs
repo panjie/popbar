@@ -29,6 +29,25 @@ Check(Actions.Link("example.com/a?q=中文")?.Host=="example.com","bare domain")
 Check(Actions.Link("javascript:alert(1)")==null && Actions.Link("file:///C:/test.exe")==null,"unsafe schemes rejected");
 Check(Actions.Link("https://user:password@example.com")==null,"URL credentials rejected");
 Check(Actions.Link("some words example.com")==null,"phrase remains search");
+Check(new[]{"https://example.com/docs","example.com","打开：https://example.com/docs"}.All(text=>SmartActions.Detect(text)==null),"URLs are excluded from smart actions");
+Check(SmartActions.Detect("https://a.com https://b.com")==null,"ambiguous URLs do not select an arbitrary target");
+Check(SmartActions.Detect("A long paragraph mentioning https://a.com with much more unrelated text stays a search")==null,"incidental URL is not dominant");
+Check(SmartActions.Detect("hello world")==null && SmartActions.Detect("javascript:alert(1)")==null,"ordinary prose and unsupported schemes have no action");
+var smartCommand=SmartActions.Detect("git clone https://example.com/repository.git");
+Check(smartCommand is { Kind:SmartActionKind.Command,PowerShell:false } && smartCommand.StartInfo().Arguments=="/d /k git clone https://example.com/repository.git","command arguments are not mistaken for URL actions");
+Check(SmartActions.Detect(@"PS C:\work> Get-ChildItem -Force") is { Target:"Get-ChildItem -Force",PowerShell:true },"PowerShell prompt removed");
+Check(SmartActions.Detect(@"C:\work> dir /b") is { Target:"dir /b",PowerShell:false },"CMD prompt removed");
+Check(SmartActions.Detect("```powershell\nWrite-Output '你好 & $x'\n```") is { Target:"Write-Output '你好 & $x'",PowerShell:true },"single-line fenced command recognized");
+var psAction=SmartActions.Detect("Get-ChildItem 'C:\\Folder with spaces'")!;
+Check(Encoding.Unicode.GetString(Convert.FromBase64String(psAction.StartInfo().ArgumentList[^1]))==psAction.Target,"PowerShell transport preserves literal command text");
+Check(SmartActions.Detect("git status\ndel important.txt")==null,"multiple command lines are not silently executed");
+var smartFixture=Path.Combine(Path.GetTempPath(),"PopBar smart "+Guid.NewGuid().ToString("N")+".txt");
+try {
+    File.WriteAllText(smartFixture,"fixture");
+    Check(SmartActions.Detect(smartFixture)==null && SmartActions.Detect(Path.GetDirectoryName(smartFixture)!)==null,"files and folders are excluded from smart actions");
+    Check(Actions.ExistingPath(smartFixture)==smartFixture,"existing file location action is preserved");
+    Check(SmartActions.Detect(smartFixture+".missing")==null,"missing file is not offered");
+} finally { File.Delete(smartFixture); }
 Check(MarkdownText.DemoteImages("![追踪](https://example.com/a.png)")=="[追踪](https://example.com/a.png)","markdown images become links");
 Check(MarkdownText.DemoteImages("普通文字")=="普通文字","markdown without images unchanged");
 var userTurn=MarkdownText.FormatUserTurn("你","# 标题\n**粗体** <b>x</b> ![图](https://example.com/a.png)");
@@ -122,6 +141,7 @@ foreach(var enabled in new[]{false,true}) {
     await AiClient.Stream(settings,testPrompt,"你好",_=>{},default,officialHandler);
     Check(officialHandler.Valid && officialHandler.ThinkingMode==(enabled?"enabled":"disabled"),$"official DeepSeek Flash thinking toggle ({enabled})");
 }
+passed+=await SmartChecks.Run();
 passed+=UiChecks.Run();
 Console.WriteLine($"{passed} checks passed.");
 

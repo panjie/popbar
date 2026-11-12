@@ -468,4 +468,36 @@ Click Add prompt to get started.</value>
   <data name="WaitingForResponse" xml:space="preserve">
     <value>Waiting for the service…</value>
   </data>
+  <data name="RunCommand" xml:space="preserve"><value>Run command (CMD)</value></data>
+  <data name="RunPowerShell" xml:space="preserve"><value>Run command (PowerShell)</value></data>
+  <data name="SmartCalculate" xml:space="preserve"><value>Calculate</value></data>
+  <data name="SmartJson" xml:space="preserve"><value>Format JSON</value></data>
+  <data name="SmartJsonCompact" xml:space="preserve"><value>Compact JSON</value></data>
+  <data name="SmartCurrency" xml:space="preserve"><value>Convert currency</value></data>
+  <data name="SmartInvalidInput" xml:space="preserve"><value>Invalid input format.</value></data>
+  <data name="SmartExponent" xml:space="preserve"><value>Exponent must be an integer between -100 and 100.</value></data>
+  <data name="SmartAssumedCurrency" xml:space="preserve"><value>Currency unspecified in “{0}”; using the default source currency {1}.</value></data>
+  <data name="SmartRateSource" xml:space="preserve"><value>Source: Frankfurter · Reference rates (not live quotes)</value></data>
+  <data name="SmartMoneyLimit" xml:space="preserve"><value>Only the first 20 amounts are processed.</value></data>
+  <data name="SmartRateFailed" xml:space="preserve"><value>Exchange-rate lookup failed or timed out. Check your connection and retry.</value></data>
+  <data name="SmartRateLoading" xml:space="preserve"><value>Fetching reference rates…</value></data>
+  <data name="SmartRateHelp" xml:space="preserve"><value>Results include source and date; actual exchange amounts depend on your bank or payment provider.</value></data>
+  <data name="SmartLocalProcessing" xml:space="preserve"><value>Processed on this device.</value></data>
+  <data name="SmartTransformFailed" xml:space="preserve"><value>Conversion failed: {0}</value></data>
+  <data name="SmartRetry" xml:space="preserve"><value>Retry</value></data>
+  <data name="SmartConversionMode" xml:space="preserve"><value>Conversion mode</value></data>
+  <data name="SmartButtons" xml:space="preserve"><value>Smart buttons</value></data>
+  <data name="SmartCurrencyEnabled" xml:space="preserve"><value>Show currency conversion automatically</value></data>
+  <data name="SmartCurrencyTarget" xml:space="preserve"><value>Default target currency (CNY / JPY / USD)</value></data>
+  <data name="SmartCurrencySource" xml:space="preserve"><value>When source currency is unclear</value></data>
+  <data name="SmartCurrencySettingsHelp" xml:space="preserve"><value>¥, ￥ and amounts such as “price 100” use the default source; $ means USD and 元 means CNY. Only currency codes are sent on click, never amounts or selected text. Rates are cached in memory for 1 hour.</value></data>
+  <data name="SmartUnit" xml:space="preserve"><value>Convert units</value></data>
+  <data name="SmartAbsoluteZero" xml:space="preserve"><value>Temperature cannot be below absolute zero.</value></data>
+  <data name="SmartUnitLimit" xml:space="preserve"><value>Only the first 20 quantities are converted.</value></data>
+  <data name="SmartAiMoneySource" xml:space="preserve"><value>AI source text: “{0}”</value></data>
+  <data name="SmartAiMoneyReview" xml:space="preserve"><value>Check the AI-extracted amounts and currencies against the original text. Conversion uses reference rates.</value></data>
+  <data name="SmartAiAutomatic" xml:space="preserve"><value>Use AI to add smart buttons automatically</value></data>
+  <data name="SmartAiAnalyzing" xml:space="preserve"><value>Analyzing selected text</value></data>
+  <data name="SmartAiAutomaticHelp" xml:space="preserve"><value>With an AI model configured, showing the toolbar automatically sends selected text to your configured service to identify available smart actions.</value></data>
+  <data name="SmartAiResultReview" xml:space="preserve"><value>Check the recognized input against the original text.</value></data>
 </root>
