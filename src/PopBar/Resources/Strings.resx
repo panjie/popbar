@@ -448,11 +448,20 @@ Click Add prompt to get started.</value>
     <value>Opacity before the pointer moves over the toolbar. Choose 100% to keep it fully opaque.</value>
   </data>
   <data name="ToolbarPosition" xml:space="preserve">
-    <value>Toolbar position</value>
+    <value>Default position</value>
   </data>
   <data name="ToolbarPositionHelp" xml:space="preserve">
     <value>Relative to the pointer after selection. The toolbar flips near screen edges.</value>
   </data>
+  <data name="ToolbarPlacementPageTitle" xml:space="preserve"><value>Toolbar position</value></data>
+  <data name="ToolbarAppPositions" xml:space="preserve"><value>Position by app</value></data>
+  <data name="ToolbarAppPositionsHelp" xml:space="preserve"><value>Remove an app rule to use the default position. Browser rules apply to all sites in that browser.</value></data>
+  <data name="ToolbarCustomApp" xml:space="preserve"><value>Custom app</value></data>
+  <data name="ToolbarExecutableHint" xml:space="preserve"><value>Executable name, for example notepad.exe</value></data>
+  <data name="ToolbarAddApp" xml:space="preserve"><value>Add app</value></data>
+  <data name="ToolbarRemoveApp" xml:space="preserve"><value>Remove</value></data>
+  <data name="ToolbarAppPositionFor" xml:space="preserve"><value>Toolbar position for {0}</value></data>
+  <data name="ToolbarRemoveAppNamed" xml:space="preserve"><value>Remove {0}</value></data>
   <data name="ToolbarTitle" xml:space="preserve">
     <value>PopBar · Selection toolbar</value>
   </data>

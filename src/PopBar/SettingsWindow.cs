@@ -61,6 +61,7 @@ internal sealed class SettingsWindow:Window
         }
 
         var (generalPage,general)=StandardPage("GeneralPage",T("General"),T("GeneralDescription"));
+        var (placementPage,placement)=StandardPage("ToolbarPlacementPage",T("ToolbarPlacementPageTitle"),T("ToolbarPositionHelp"));
         var (aiPage,ai)=StandardPage("AiPage",T("AiService"),T("AiServiceDescription"));
         var promptsPage=new Grid { Name="PromptsPage",Visibility=Visibility.Collapsed }; pages.Children.Add(promptsPage);
 
@@ -72,21 +73,30 @@ internal sealed class SettingsWindow:Window
             var button=new Button { Name=name,Content=content }; button.SetResourceReference(FrameworkElement.StyleProperty,"NavigationButtonStyle"); navigation.Children.Add(button); return button;
         }
         var generalNav=Navigation("GeneralNavigationButton","\uE80F",T("General"));
+        var placementNav=Navigation("ToolbarPlacementNavigationButton","\uE7C4",T("ToolbarPlacementPageTitle"));
         var aiNav=Navigation("AiNavigationButton","\uE73E",T("AiService"));
         var promptsNav=Navigation("PromptsNavigationButton","\uE70F",T("Prompts"));
-        void ShowPage(Grid selected,Button selectedNav)
+        var navigationPages=new[]{(generalPage,generalNav),(placementPage,placementNav),(aiPage,aiNav),(promptsPage,promptsNav)};
+        void ShowPage(Grid selected)
         {
-            generalPage.Visibility=selected==generalPage?Visibility.Visible:Visibility.Collapsed;
-            aiPage.Visibility=selected==aiPage?Visibility.Visible:Visibility.Collapsed;
-            promptsPage.Visibility=selected==promptsPage?Visibility.Visible:Visibility.Collapsed;
-            foreach(var button in new[]{generalNav,aiNav,promptsNav}) {
+            foreach(var (page,button) in navigationPages) {
+                page.Visibility=page==selected?Visibility.Visible:Visibility.Collapsed;
                 button.Background=Brushes.Transparent;
-                if(button==selectedNav) button.SetResourceReference(Button.BackgroundProperty,"SurfaceBrush");
+                if(page==selected) button.SetResourceReference(Button.BackgroundProperty,"SurfaceBrush");
             }
         }
-        generalNav.Click+=(_,_)=>ShowPage(generalPage,generalNav);
-        aiNav.Click+=(_,_)=>ShowPage(aiPage,aiNav);
-        promptsNav.Click+=(_,_)=>ShowPage(promptsPage,promptsNav);
+        foreach(var (page,button) in navigationPages) button.Click+=(_,_)=>ShowPage(page);
+
+        var positionLabel=FieldLabel(placement,T("ToolbarPosition"));
+        positionLabel.Margin=new Thickness(0,0,0,6);
+        var toolbarPosition=AppToolbarPositionEditor.PositionSelector(settings.ToolbarPosition);
+        toolbarPosition.Name="ToolbarPositionSelector";
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(toolbarPosition,positionLabel);
+        placement.Children.Add(toolbarPosition);
+        Section(placement,T("ToolbarAppPositions"));
+        placement.Children.Add(Text(T("ToolbarAppPositionsHelp"),12,true));
+        var appPositions=new AppToolbarPositionEditor(settings.ToolbarAppPositions) { Margin=new Thickness(0,10,0,6) };
+        placement.Children.Add(appPositions);
 
         var languageLabel=FieldLabel(general,T("UiLanguage"));
         languageLabel.Margin=new Thickness(0,0,0,6);
@@ -143,14 +153,6 @@ internal sealed class SettingsWindow:Window
         var opacityHelp=Text(T("ToolbarOpacityHelp"),12,true); opacityHelp.Margin=new Thickness(0,6,0,0); general.Children.Add(opacityHelp);
 
         Section(general,T("SelectionBehavior"));
-        FieldLabel(general,T("ToolbarPosition"));
-        var toolbarPosition=new ComboBox { Name="ToolbarPositionSelector" };
-        toolbarPosition.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
-        foreach(var item in new[]{(ToolbarPlacement.Above,T("Above")),(ToolbarPlacement.Below,T("Below"))})
-            toolbarPosition.Items.Add(new ComboBoxItem { Content=item.Item2,Tag=item.Item1 });
-        toolbarPosition.SelectedIndex=settings.ToolbarPosition==ToolbarPlacement.Below?1:0;
-        general.Children.Add(toolbarPosition);
-        var positionHelp=Text(T("ToolbarPositionHelp"),12,true); positionHelp.Margin=new Thickness(0,6,0,6); general.Children.Add(positionHelp);
         var enabled=new CheckBox { Content=T("AutoShowToolbar"),IsChecked=settings.Enabled }; general.Children.Add(enabled);
         var terminal=new CheckBox { Content=T("TerminalShift"),IsChecked=settings.TerminalShift }; general.Children.Add(terminal);
         Section(general,T("AiResultWindow"));
@@ -404,6 +406,7 @@ internal sealed class SettingsWindow:Window
                 var selectedTheme=(theme.SelectedItem as ComboBoxItem)?.Tag is AppTheme value?value:AppTheme.System;
                 var selectedOpacity=(toolbarOpacity.SelectedItem as ComboBoxItem)?.Tag is int percent?percent:ToolbarWindow.DefaultIdleOpacityPercent;
                 var next=new Settings { Theme=selectedTheme,ToolbarPosition=toolbarPosition.SelectedIndex==1?ToolbarPlacement.Below:ToolbarPlacement.Above,ToolbarIdleOpacity=selectedOpacity,Enabled=enabled.IsChecked==true,TerminalShift=terminal.IsChecked==true,SearchUrl=search.Text.Trim(),ExcludedApps=excluded.Text,BaseUrl=url.Text.Trim(),Model=model.Text.Trim(),EncryptedKey=settings.EncryptedKey,Prompts=drafts.Select(x=> { var copy=x.Copy(); copy.Name=copy.Name.Trim(); return copy; }).ToList() };
+                next.ToolbarAppPositions=appPositions.ReadPositions();
                 next.Language=language.SelectedValue is UiLanguage preference?preference:UiLanguage.System;
                 next.AutoCloseResultOnDeactivate=autoCloseResult.IsChecked==true;
                 next.ResultFontFamily=resultFont.SelectedValue as string??"";
@@ -426,6 +429,6 @@ internal sealed class SettingsWindow:Window
                 Close();
             } catch(Exception ex) { MessageBox.Show(this,ex.Message,T("SettingsSaveFailedTitle"),MessageBoxButton.OK,MessageBoxImage.Warning); }
         },"PrimaryButtonStyle"));
-        ShowPage(generalPage,generalNav);
+        ShowPage(generalPage);
     }
 }

@@ -101,7 +101,7 @@ public partial class App:Application
                 smartResultWindow=preview;
                 preview.Closed+=(_,_)=> { if(smartResultWindow==preview) smartResultWindow=null; };
                 WindowPresentation.ShowForeground(preview);
-            });
+            },placement:settings.ToolbarPositionFor(process));
         } catch { if(manual) Notify(T("SelectionReadFailed")); }
         finally { probing=false; }
     }

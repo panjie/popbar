@@ -93,6 +93,27 @@ Check(JsonSerializer.Deserialize<Settings>("{}")!.AutoCloseResultOnDeactivate,"r
 var manualCloseSettings=JsonSerializer.Serialize(new Settings { AutoCloseResultOnDeactivate=false });
 Check(!JsonSerializer.Deserialize<Settings>(manualCloseSettings)!.AutoCloseResultOnDeactivate,"disabled result auto-close survives saving and reloading");
 Check(Enum.GetValues<ToolbarPlacement>().All(position=>JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(new Settings { ToolbarPosition=position }))!.ToolbarPosition==position),"toolbar placement JSON round trip");
+var defaultAppPositions=new Settings();
+Check(defaultAppPositions.ToolbarAppPositions.Count==10 && defaultAppPositions.ToolbarPositionFor("MS-TEAMS")==ToolbarPlacement.Below &&
+    defaultAppPositions.ToolbarPositionFor("OUTLOOK")==ToolbarPlacement.Below && defaultAppPositions.ToolbarPositionFor("msedgewebview2")==ToolbarPlacement.Above,
+    "app placement presets are active out of the box and match host aliases");
+var appPositionSettings=JsonSerializer.Deserialize<Settings>("""
+    {"ToolbarAppPositions":[
+        {"Executables":["MS-TEAMS.EXE","Teams.exe"],"Position":"Above"},
+        {"Executables":["notepad.exe"],"Position":"Above"}
+    ]}
+    """)!;
+Check(appPositionSettings.ToolbarAppPositions.Count==11 && appPositionSettings.ToolbarPositionFor("MS-TEAMS")==ToolbarPlacement.Above &&
+    appPositionSettings.ToolbarPositionFor("Teams")==ToolbarPlacement.Above && appPositionSettings.ToolbarPositionFor("olk")==ToolbarPlacement.Below &&
+    JsonSerializer.Deserialize<Settings>("{}")!.ToolbarPositionFor("Teams")==ToolbarPlacement.Below &&
+    JsonSerializer.Deserialize<Settings>("{\"ToolbarAppPositions\":[]}")!.ToolbarPositionFor("Teams")==ToolbarPlacement.Below,
+    "older settings gain missing presets and keep previously configured positions");
+appPositionSettings.ToolbarAppPositions.RemoveAll(rule=>rule.Executables.Contains("olk.exe"));
+var reloadedAppPositions=JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(appPositionSettings))!;
+Check(reloadedAppPositions.ToolbarAppPositions.Count==10 && reloadedAppPositions.ToolbarPositionFor("olk")==ToolbarPlacement.Above &&
+    reloadedAppPositions.ToolbarPositionFor("winword")==ToolbarPlacement.Below &&
+    reloadedAppPositions.ToolbarAppPositions.Any(rule=>rule.Executables.Contains("notepad.exe")),
+    "removing a preset persists through reload alongside custom rules");
 Check(ToolbarWindow.VerticalPosition(400,50,0,1000,ToolbarPlacement.Above)==336 && ToolbarWindow.VerticalPosition(400,50,0,1000,ToolbarPlacement.Below)==420,"toolbar preferred side");
 Check(ToolbarWindow.VerticalPosition(20,50,0,1000,ToolbarPlacement.Above)==40 && ToolbarWindow.VerticalPosition(980,50,0,1000,ToolbarPlacement.Below)==916,"toolbar flips at screen edges");
 Check(ToolbarWindow.VerticalPosition(-500,75,-1080,0,ToolbarPlacement.Below)==-480 && ToolbarWindow.VerticalPosition(40,200,0,100,ToolbarPlacement.Below)==0,"toolbar negative monitor and oversized bounds");

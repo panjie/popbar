@@ -448,11 +448,20 @@
     <value>鼠标移入前工具条的透明度；100% 表示完全不透明。</value>
   </data>
   <data name="ToolbarPosition" xml:space="preserve">
-    <value>工具条显示位置</value>
+    <value>默认显示位置</value>
   </data>
   <data name="ToolbarPositionHelp" xml:space="preserve">
     <value>相对于划词结束时的鼠标位置；靠近屏幕边缘时自动避让。</value>
   </data>
+  <data name="ToolbarPlacementPageTitle" xml:space="preserve"><value>工具条位置</value></data>
+  <data name="ToolbarAppPositions" xml:space="preserve"><value>按应用设置位置</value></data>
+  <data name="ToolbarAppPositionsHelp" xml:space="preserve"><value>移除应用规则后，该应用使用默认位置。浏览器规则适用于该浏览器中的所有网页。</value></data>
+  <data name="ToolbarCustomApp" xml:space="preserve"><value>自定义应用</value></data>
+  <data name="ToolbarExecutableHint" xml:space="preserve"><value>可执行文件名，例如 notepad.exe</value></data>
+  <data name="ToolbarAddApp" xml:space="preserve"><value>添加应用</value></data>
+  <data name="ToolbarRemoveApp" xml:space="preserve"><value>移除</value></data>
+  <data name="ToolbarAppPositionFor" xml:space="preserve"><value>{0} 的工具条位置</value></data>
+  <data name="ToolbarRemoveAppNamed" xml:space="preserve"><value>移除 {0}</value></data>
   <data name="ToolbarTitle" xml:space="preserve">
     <value>PopBar · 划词工具条</value>
   </data>

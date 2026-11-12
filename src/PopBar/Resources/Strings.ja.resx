@@ -448,11 +448,20 @@
     <value>ポインターを重ねる前のツールバーの透明度です。100% にすると完全に不透明になります。</value>
   </data>
   <data name="ToolbarPosition" xml:space="preserve">
-    <value>ツールバーの表示位置</value>
+    <value>既定の表示位置</value>
   </data>
   <data name="ToolbarPositionHelp" xml:space="preserve">
     <value>選択終了時のポインターを基準に表示します。画面の端では反対側に表示します。</value>
   </data>
+  <data name="ToolbarPlacementPageTitle" xml:space="preserve"><value>ツールバーの位置</value></data>
+  <data name="ToolbarAppPositions" xml:space="preserve"><value>アプリ別の表示位置</value></data>
+  <data name="ToolbarAppPositionsHelp" xml:space="preserve"><value>アプリのルールを削除すると、既定の表示位置が適用されます。ブラウザーのルールはそのブラウザーのすべてのサイトに適用されます。</value></data>
+  <data name="ToolbarCustomApp" xml:space="preserve"><value>カスタムアプリ</value></data>
+  <data name="ToolbarExecutableHint" xml:space="preserve"><value>実行ファイル名（例 notepad.exe）</value></data>
+  <data name="ToolbarAddApp" xml:space="preserve"><value>アプリを追加</value></data>
+  <data name="ToolbarRemoveApp" xml:space="preserve"><value>削除</value></data>
+  <data name="ToolbarAppPositionFor" xml:space="preserve"><value>{0} のツールバーの表示位置</value></data>
+  <data name="ToolbarRemoveAppNamed" xml:space="preserve"><value>{0} を削除</value></data>
   <data name="ToolbarTitle" xml:space="preserve">
     <value>PopBar · 選択ツールバー</value>
   </data>

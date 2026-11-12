@@ -374,6 +374,8 @@ internal static class UiChecks
                             "Japanese Follow Windows selector actually renders Yu Gothic UI glyphs");
                     }
                     Capture(localizedSettings,$"settings-{tag}-general");
+                    FindNamed<Button>(localizedSettings,"ToolbarPlacementNavigationButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Capture(localizedSettings,$"settings-{tag}-toolbar-position");
                     FindNamed<Button>(localizedSettings,"AiNavigationButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     Capture(localizedSettings,$"settings-{tag}-ai");
                     Capture(languagePreview,$"result-{tag}");
@@ -456,9 +458,37 @@ internal static class UiChecks
             currencyTarget.SelectedItem="JPY"; currencySource.SelectedItem="USD";
             Check(sourceSettings.CurrencyTarget=="CNY"&&sourceSettings.CurrencySource=="CNY","currency settings stay a draft until saved");
             Check(Equals(resultFont.SelectedValue,chosenFont.Source) && Equals(resultSize.SelectedItem,18),"settings load saved result font and size");
+            var placementPage=FindNamed<FrameworkElement>(settingsWindow,"ToolbarPlacementPage");
+            Check(placementPage.Visibility==Visibility.Collapsed,"app placement list is separate from general settings");
+            Click(FindNamed<Button>(settingsWindow,"ToolbarPlacementNavigationButton"));
+            Check(placementPage.Visibility==Visibility.Visible && generalPage.Visibility==Visibility.Collapsed &&
+                aiPage.Visibility==Visibility.Collapsed && promptsPage.Visibility==Visibility.Collapsed,"toolbar position page has its own navigation");
+            Capture(settingsWindow,"settings-toolbar-position");
             Check(position.Items.Cast<ComboBoxItem>().Select(item=>item.Tag).SequenceEqual(new object[]{ToolbarPlacement.Above,ToolbarPlacement.Below}) && position.SelectedIndex==0,"toolbar placement settings options");
             position.SelectedIndex=1;
             Check(sourceSettings.ToolbarPosition==ToolbarPlacement.Above,"toolbar placement remains a draft until saved");
+            var appPositionEditor=LogicalDescendants<AppToolbarPositionEditor>(settingsWindow).Single();
+            var appPreset=FindNamed<ComboBox>(settingsWindow,"AppToolbarPresetSelector");
+            var addApp=FindNamed<Button>(settingsWindow,"AppToolbarAddButton");
+            Check(appPreset.Visibility==Visibility.Collapsed && appPositionEditor.ReadPositions().Count==10 &&
+                appPositionEditor.ReadPositions().All(rule=>rule.Position==ToolbarPlacement.Below),"app placement presets are already enabled");
+            var appPosition=FindNamed<ComboBox>(settingsWindow,"AppToolbarPositionSelector");
+            appPosition.SelectedIndex=0;
+            Check(appPositionEditor.ReadPositions()[0].Position==ToolbarPlacement.Above && sourceSettings.ToolbarAppPositions[0].Position==ToolbarPlacement.Below,
+                "app positions can be changed without editing saved settings");
+            Click(FindNamed<Button>(settingsWindow,"AppToolbarRemoveButton"));
+            Check(appPositionEditor.ReadPositions().Count==9 && appPreset.Visibility==Visibility.Visible && appPreset.Items.Count==2,
+                "removed preset becomes available to restore");
+            appPreset.SelectedIndex=1;
+            Click(addApp);
+            Check(appPreset.Visibility==Visibility.Collapsed && appPositionEditor.ReadPositions()[^1].Executables.SequenceEqual(new[]{"ms-teams.exe","Teams.exe"}),
+                "restoring Teams adds both executables without listing configured presets");
+            var customApp=FindNamed<TextBox>(settingsWindow,"AppToolbarExecutableInput");
+            customApp.Text=" Notepad ";
+            Click(addApp);
+            customApp.Text="NOTEPAD.EXE";
+            Check(appPositionEditor.ReadPositions()[^1].Executables.Single()=="Notepad.exe" && !addApp.IsEnabled,
+                "custom app accepts a bare process name and blocks case-insensitive duplicates");
             theme.ApplyTemplate();
             var toggle=(System.Windows.Controls.Primitives.ToggleButton)theme.Template.FindName("ToggleButton",theme);
             Check(Equals(toggle.Background,theme.Background) && Equals(toggle.BorderBrush,theme.BorderBrush),"theme selector surface and border bindings");

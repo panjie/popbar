@@ -7,6 +7,9 @@ namespace PopBar;
 
 public enum AppTheme { System, Light, Dark }
 public enum ToolbarPlacement { Above, Below }
+public sealed record AppToolbarPosition(
+    string[] Executables,
+    [property:JsonConverter(typeof(JsonStringEnumConverter))] ToolbarPlacement Position);
 // Default is retained only for reading older settings.
 public enum PromptIconKind { Default, Emoji, NerdFont }
 public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged,IJsonOnDeserialized
@@ -37,7 +40,7 @@ public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged,IJ
     }
     internal PromptAction Copy() => new() { Name=Name,Prompt=Prompt,IconKind=IconKind,Icon=Icon,IconFont=IconFont };
 }
-public sealed class Settings
+public sealed class Settings:IJsonOnDeserializing,IJsonOnDeserialized
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public UiLanguage Language { get; set; } = UiLanguage.System;
@@ -45,6 +48,9 @@ public sealed class Settings
     public AppTheme Theme { get; set; } = AppTheme.System;
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ToolbarPlacement ToolbarPosition { get; set; } = ToolbarPlacement.Above;
+    public List<AppToolbarPosition> ToolbarAppPositions { get; set; } = AppToolbarPresets.CreateDefaults();
+    [JsonInclude]
+    internal bool ToolbarAppPositionsInitialized { get; private set; } = true;
     public int ToolbarIdleOpacity { get; set; } = 35;
     public bool Enabled { get; set; } = true;
     public bool TerminalShift { get; set; } = true;
@@ -64,6 +70,15 @@ public sealed class Settings
     public List<PromptAction> Prompts { get; set; } = BuiltInPrompts.Create();
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"PopBar");
     public static string FilePath => Path.Combine(Folder,"settings.json");
+    void IJsonOnDeserializing.OnDeserializing() => ToolbarAppPositionsInitialized=false;
+    void IJsonOnDeserialized.OnDeserialized()
+    {
+        ToolbarAppPositions??=[];
+        // Older versions stored only opt-in rules. Add presets once, so later removals persist.
+        if(ToolbarAppPositionsInitialized) return;
+        AppToolbarPresets.AddMissing(ToolbarAppPositions);
+        ToolbarAppPositionsInitialized=true;
+    }
     public static Settings Load()
     {
         if(!File.Exists(FilePath)) return new();
@@ -80,4 +95,7 @@ public sealed class Settings
     public string GetKey() => string.IsNullOrEmpty(EncryptedKey)?"":Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(EncryptedKey),null,DataProtectionScope.CurrentUser));
     public void SetKey(string key) => EncryptedKey=key.Length==0?"":Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key),null,DataProtectionScope.CurrentUser));
     public bool Excludes(string name) => ExcludedApps.Split(new[]{',',';','\n'},StringSplitOptions.RemoveEmptyEntries).Any(x=>string.Equals(Path.GetFileNameWithoutExtension(x.Trim()),name,StringComparison.OrdinalIgnoreCase));
+    internal ToolbarPlacement ToolbarPositionFor(string processName) => ToolbarAppPositions?
+        .FirstOrDefault(rule=>rule?.Executables?.Contains(processName+".exe",StringComparer.OrdinalIgnoreCase)==true)
+        ?.Position??ToolbarPosition;
 }

@@ -83,7 +83,7 @@ internal sealed class ToolbarWindow:Window
         return indicator;
     }
 
-    internal void Present(Selection selection,Native.Point point,Settings settings,Action configure,Action<PromptAction> ai,Action<string> notify,Action<SmartAction>? transform=null)
+    internal void Present(Selection selection,Native.Point point,Settings settings,Action configure,Action<PromptAction> ai,Action<string> notify,Action<SmartAction>? transform=null,ToolbarPlacement? placement=null)
     {
         CancelAnalysis();
         idleOpacity=NormalizeIdleOpacity(settings.ToolbarIdleOpacity)/100.0;
@@ -171,7 +171,7 @@ internal sealed class ToolbarWindow:Window
             UpdateLayout();
             int w=(int)Math.Ceiling(ActualWidth*dpi.DpiScaleX),h=(int)Math.Ceiling(ActualHeight*dpi.DpiScaleY);
             left=Math.Clamp(left??(point.X-w/2),screen.Left,Math.Max(screen.Left,screen.Right-w));
-            int y=VerticalPosition(point.Y,h,screen.Top,screen.Bottom,settings.ToolbarPosition);
+            int y=VerticalPosition(point.Y,h,screen.Top,screen.Bottom,placement??settings.ToolbarPosition);
             Native.SetWindowPos(Handle,-1,left.Value,y,0,0,0x11);
         }
         Position();
