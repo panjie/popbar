@@ -99,6 +99,7 @@
   <data name="FollowUpPrompt" xml:space="preserve">
     <value>继续追问或要求修正。Enter 发送，Shift+Enter 换行。</value>
   </data>
+  <data name="FollowUpPlaceholder" xml:space="preserve"><value>输入追问…</value></data>
   <data name="SendFollowUp" xml:space="preserve">
     <value>发送追问</value>
   </data>
@@ -356,8 +357,8 @@
   <data name="SearchUrlHelp" xml:space="preserve">
     <value>使用 {text} 代表选中文字，例如 https://www.bing.com/search?q={text}</value>
   </data>
-  <data name="SelectedCharacterCount" xml:space="preserve">
-    <value>已选 {0:N0} 字符</value>
+  <data name="CloseWindow" xml:space="preserve">
+    <value>关闭窗口</value>
   </data>
   <data name="SelectionBehavior" xml:space="preserve">
     <value>划词行为</value>
@@ -491,7 +492,6 @@
   <data name="SmartRateFailed" xml:space="preserve"><value>汇率查询失败或超时，请检查网络后重试。</value></data>
   <data name="SmartRateLoading" xml:space="preserve"><value>正在查询参考汇率…</value></data>
   <data name="SmartRateHelp" xml:space="preserve"><value>结果包含来源与日期；实际兑换金额以银行或支付平台为准。</value></data>
-  <data name="SmartLocalProcessing" xml:space="preserve"><value>在本机处理结果。</value></data>
   <data name="SmartTransformFailed" xml:space="preserve"><value>转换失败：{0}</value></data>
   <data name="SmartRetry" xml:space="preserve"><value>重试</value></data>
   <data name="SmartConversionMode" xml:space="preserve"><value>转换方式</value></data>

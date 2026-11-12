@@ -11,6 +11,8 @@ internal static class UiChecks
     static extern bool PrintWindow(nint window,nint dc,uint flags);
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     static extern void mouse_event(uint flags,uint x,uint y,uint data,nuint extra);
+    [System.Runtime.InteropServices.DllImport("user32.dll",EntryPoint="SendMessageW")]
+    static extern nint SendMessage(nint window,uint message,nint wParam,nint lParam);
     public static int Run()
     {
         var passed=0;
@@ -249,6 +251,44 @@ internal static class UiChecks
             Check(!borderGlow.IsVisible && !glowPosition.HasAnimatedProperties,"fully opaque toolbar has no glow");
         } finally { toolbar.Close(); System.Windows.Forms.Cursor.Position=toolbarCursor; }
 
+        void CheckResultChrome(ResultPopupWindow window)
+        {
+            var surface=FindNamed<Border>(window,"ResultSurface");
+            var caption=FindNamed<Border>(window,"ResultTitleBar");
+            var close=FindNamed<Button>(window,"CloseResultButton");
+            var hwnd=new System.Windows.Interop.WindowInteropHelper(window).Handle;
+            nint HitTest(FrameworkElement element,Point point)
+            {
+                var screen=element.PointToScreen(point);
+                var coordinates=((int)screen.X & 0xffff) | ((int)screen.Y << 16);
+                return SendMessage(hwnd,0x84,0,coordinates); // WM_NCHITTEST
+            }
+            Check(surface.CornerRadius.TopLeft==12 && !surface.Clip.FillContains(new Point(1,1)),"result surface clips its corners");
+            Check(HitTest(caption,new Point(caption.ActualWidth/2,caption.ActualHeight/2))==2 &&
+                HitTest(surface,new Point(2,surface.ActualHeight/2))==10 &&
+                HitTest(close,new Point(close.ActualWidth/2,close.ActualHeight/2))==1,
+                "result caption drags, edge resizes and close remains clickable");
+        }
+        var roundedResult=new ResultWindow(new Settings { Model="test-model" },new PromptAction { Name="翻译",Prompt="{{text}}" },
+            new Selection(0,new string('x',117),false,null,null),(_,_,append,_,_)=> { append("会议改到周四下午三点。"); return Task.CompletedTask; });
+        try {
+            roundedResult.Show(); PumpFor(40);
+            CheckResultChrome(roundedResult);
+            Check(FindNamed<TextBlock>(roundedResult,"ResultHeading").Text=="翻译" &&
+                FindNamed<TextBlock>(roundedResult,"ResultModel").Text=="test-model" &&
+                LogicalDescendants<TextBlock>(roundedResult).All(text=>!text.Text.Contains("117")),
+                "AI result header shows the action and model without the selected character count");
+            Capture(roundedResult,"rounded-ai-result");
+            FindNamed<Button>(roundedResult,"FollowUpButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Capture(roundedResult,"rounded-ai-follow-up");
+            roundedResult.Width=roundedResult.MinWidth;
+            roundedResult.Height=roundedResult.MinHeight;
+            roundedResult.UpdateLayout();
+            CheckResultChrome(roundedResult);
+            FindNamed<Button>(roundedResult,"CloseResultButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(!roundedResult.IsVisible,"result caption close button closes the window");
+        } finally { if(roundedResult.IsVisible) roundedResult.Close(); }
+
         foreach(var (kind,smartInput,expected) in new[]{
             (SmartActionKind.Calculate,"128*0.85","108.8"),
             (SmartActionKind.Unit,"32°F","= 0 °C"),
@@ -257,10 +297,16 @@ internal static class UiChecks
             var smartPreview=new SmartResultWindow(new SmartAction(kind,smartInput),new Selection(0,smartInput,false,null,null),new Settings());
             try {
                 smartPreview.Show(); PumpFor(50);
+                CheckResultChrome(smartPreview);
                 Check(FindNamed<TextBox>(smartPreview,"SmartOutput").Text.Contains(expected),"smart preview renders "+kind);
                 Check(FindNamed<Button>(smartPreview,"SmartCopy").IsEnabled&&FindNamed<Button>(smartPreview,"SmartReplace").Visibility==Visibility.Collapsed,"smart preview enables copy and protects read-only source "+kind);
                 Capture(smartPreview,"smart-preview-"+kind);
-            } finally { smartPreview.Close(); }
+                var source=(PresentationSource)PresentationSource.FromVisual(smartPreview);
+                smartPreview.RaiseEvent(new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,source,0,System.Windows.Input.Key.Escape) {
+                    RoutedEvent=System.Windows.Input.Keyboard.KeyDownEvent
+                });
+                Check(!smartPreview.IsVisible,"Escape closes the smart preview "+kind);
+            } finally { if(smartPreview.IsVisible) smartPreview.Close(); }
         }
         var invalidPreview=new SmartResultWindow(new SmartAction(SmartActionKind.Calculate,"1/0"),new Selection(0,"1/0",true,null,null),new Settings());
         try {
@@ -660,7 +706,7 @@ internal static class UiChecks
             Check(!replace.IsEnabled && followUpAction.Visibility==Visibility.Collapsed &&
                 FindNamed<Border>(resultWindow,"FollowUpComposer").Visibility==Visibility.Collapsed,
                 "replacement and follow-up controls start hidden");
-            Check(resultWindow.Title.Contains("翻译") && LogicalDescendants<TextBlock>(resultWindow).Any(text=>text.Text.Contains("test-model") && text.Text.Contains("5")) && status.Text.Length>0,"result title, metadata and status");
+            Check(resultWindow.Title.Contains("翻译") && FindNamed<TextBlock>(resultWindow,"ResultModel").Text=="test-model" && status.Text.Length>0,"result title, model and status");
             Check(!output.IsToolBarVisible && output.IsSelectionEnabled && output.VerticalScrollBarVisibility==ScrollBarVisibility.Auto && output.HorizontalScrollBarVisibility==ScrollBarVisibility.Disabled,"result output is selectable scrolling markdown");
             Check(output.ClickAction==MdXaml.ClickAction.SafetyOpenBrowser,"result links use safe browser command");
             Check(ReferenceEquals(stop.Style,app.FindResource("DangerButtonStyle")) && ReferenceEquals(followUpAction.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(copy.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(replace.Style,app.FindResource("PrimaryButtonStyle")),"result action styles");
@@ -708,11 +754,12 @@ internal static class UiChecks
             Check(finalHeading.FontWeight==FontWeights.Bold && bodyParagraph.Margin.Bottom>=12,
                 "markdown has bold headings and distinct paragraph spacing");
             ThemeManager.Apply(AppTheme.Light);
-            var resultLight=((SolidColorBrush)resultWindow.Background).Color;
+            var resultSurface=FindNamed<Border>(resultWindow,"ResultSurface");
+            var resultLight=((SolidColorBrush)resultSurface.Background).Color;
             var outputLight=((SolidColorBrush)output.Background).Color;
             var headingLight=(finalHeading.Foreground as SolidColorBrush)?.Color;
             ThemeManager.Apply(AppTheme.Dark);
-            Check(((SolidColorBrush)resultWindow.Background).Color!=resultLight,"result window updates theme");
+            Check(((SolidColorBrush)resultSurface.Background).Color!=resultLight,"result window updates theme");
             Check(((SolidColorBrush)output.Background).Color!=outputLight,"result markdown follows theme");
             var headingDark=(finalHeading.Foreground as SolidColorBrush)?.Color;
             Check(headingLight is not null && headingDark is not null && headingLight!=headingDark &&
@@ -987,7 +1034,11 @@ internal static class UiChecks
         foreach(var theme in new[]{AppTheme.Light,AppTheme.Dark}) {
             ThemeManager.Apply(theme);
             var root=(FrameworkElement)window.Content;
-            var size=window is ToolbarWindow?new Size(window.ActualWidth,window.ActualHeight):new Size(window.Width-16,window.Height-39);
+            var size=window switch {
+                ToolbarWindow=>new Size(window.ActualWidth,window.ActualHeight),
+                ResultPopupWindow=>new Size(window.Width,window.Height),
+                _=>new Size(window.Width-16,window.Height-39)
+            };
             root.Measure(size); root.Arrange(new Rect(size)); root.UpdateLayout();
             foreach(var scale in new[]{1.0,1.5}) {
                 var bitmap=new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(size.Width*scale),(int)Math.Ceiling(size.Height*scale),96*scale,96*scale,PixelFormats.Pbgra32);

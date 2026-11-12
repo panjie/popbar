@@ -13,16 +13,19 @@ internal delegate Task ConversationStreamer(
     CancellationToken token,
     Action? onThinking);
 
-internal sealed class ResultWindow:Window
+internal sealed class ResultWindow:ResultPopupWindow
 {
     internal const int MaxConversationCharacters=262144;
     readonly MarkdownScrollViewer output=new();
     readonly StringBuilder latestAnswer=new();
     readonly List<ChatMessage> history=new();
-    readonly TextBlock status=new() { FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis,VerticalAlignment=VerticalAlignment.Center };
-    readonly TextBlock metadata;
+    readonly TextBlock status=new() { Name="StatusText",TextTrimming=TextTrimming.CharacterEllipsis };
     readonly Button stop,replace,copy,send,followUpAction;
     readonly TextBox followUp;
+    readonly TextBlock followUpPlaceholder=new() {
+        Margin=new Thickness(12,0,10,0),VerticalAlignment=VerticalAlignment.Center,
+        IsHitTestVisible=false,TextTrimming=TextTrimming.CharacterEllipsis
+    };
     readonly Border composer;
     readonly ConversationStreamer streamer;
     string? statusKey="PreparingRequest";
@@ -37,29 +40,18 @@ internal sealed class ResultWindow:Window
     int renderedLength;
     bool closed;
     internal ResultWindow(Settings settings,PromptAction prompt,Selection selection,ConversationStreamer? streamer=null)
+        :base(PromptIcons.Create(prompt,out _))
     {
         this.settings=settings; this.prompt=prompt; this.selection=selection;
         this.streamer=streamer??((requestSettings,messages,append,token,onThinking)=>
             AiClient.Stream(requestSettings,messages,append,token,onThinking:onThinking));
         autoCloseOnDeactivate=settings.AutoCloseResultOnDeactivate;
-        Width=560; Height=440; MinWidth=360; MinHeight=240;
-        WindowStyle=WindowStyle.ToolWindow;
-        ShowInTaskbar=false;
-        WindowStartupLocation=WindowStartupLocation.CenterScreen;
-        Ui.Style(this);
+        Width=580; Height=460; MinWidth=380; MinHeight=260;
         var root=new Grid();
-        root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height=new GridLength(1,GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
-        Content=root;
-
-        metadata=new TextBlock {
-            FontSize=11,
-            Margin=new Thickness(16,8,16,3),TextTrimming=TextTrimming.CharacterEllipsis
-        };
-        metadata.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush");
-        root.Children.Add(metadata);
+        SetResultContent(root);
 
         output.Name="OutputMarkdown"; output.IsToolBarVisible=false; output.IsSelectionEnabled=true;
         output.VerticalScrollBarVisibility=ScrollBarVisibility.Auto; output.HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled;
@@ -67,15 +59,16 @@ internal sealed class ResultWindow:Window
         output.MarkdownStyle=(Style)FindResource("ResultMarkdownStyle");
         ApplyTypography(settings);
         output.SetResourceReference(Control.ForegroundProperty,"TextBrush");
-        output.SetResourceReference(Control.BackgroundProperty,"WindowBackgroundBrush");
-        Grid.SetRow(output,1); root.Children.Add(output);
+        output.SetResourceReference(Control.BackgroundProperty,"SurfaceBrush");
+        root.Children.Add(output);
 
         composer=new Border {
             Name="FollowUpComposer",Visibility=Visibility.Collapsed,
             BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(16,7,10,7)
         };
         composer.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
-        Grid.SetRow(composer,2); root.Children.Add(composer);
+        composer.SetResourceReference(Border.BackgroundProperty,"WindowBackgroundBrush");
+        Grid.SetRow(composer,1); root.Children.Add(composer);
         var composerContent=new DockPanel { LastChildFill=true };
         composer.Child=composerContent;
         send=Ui.Button("",()=>_=SendFollowUp(),"PrimaryButtonStyle");
@@ -94,37 +87,21 @@ internal sealed class ResultWindow:Window
                 _=HandleFollowUpKeyAsync(e.Key,modifiers);
             }
         };
-        followUp.TextChanged+=(_,_)=>UpdateComposer();
-        composerContent.Children.Add(followUp);
+        followUp.TextChanged+=(_,_)=> {
+            followUpPlaceholder.Visibility=followUp.Text.Length==0?Visibility.Visible:Visibility.Collapsed;
+            UpdateComposer();
+        };
+        followUpPlaceholder.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush");
+        composerContent.Children.Add(new Grid { Children={followUp,followUpPlaceholder} });
 
-        status.Name="StatusText";
-        status.Margin=new Thickness(0,0,8,0);
-        status.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush");
-        status.SetBinding(FrameworkElement.ToolTipProperty,new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source=status });
-        var footer=new Border { BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(16,5,10,5) };
-        Grid.SetRow(footer,3); root.Children.Add(footer);
-        footer.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
-        var footerContent=new DockPanel(); footer.Child=footerContent;
-        var buttons=new StackPanel { Orientation=Orientation.Horizontal };
-        DockPanel.SetDock(buttons,Dock.Right); footerContent.Children.Add(buttons);
-        footerContent.Children.Add(status);
-
-        Button ActionButton(string name,string label,Action action,string style="SubtleButtonStyle")
-        {
-            var button=Ui.Button(label,action,style);
-            button.Name=name;
-            button.MinHeight=28;
-            button.Padding=new Thickness(9,3,9,3);
-            button.Margin=new Thickness(2,0,0,0);
-            buttons.Children.Add(button);
-            return button;
-        }
-        stop=ActionButton("StopButton","",()=>pending?.Cancel(),"DangerButtonStyle");
-        followUpAction=ActionButton("FollowUpButton","",StartFollowUp);
-        copy=ActionButton("CopyResultButton","",()=> {
+        var footer=CreateResultFooter(status,out var buttons);
+        Grid.SetRow(footer,2); root.Children.Add(footer);
+        stop=AddResultAction(buttons,"StopButton","",()=>pending?.Cancel(),"DangerButtonStyle");
+        followUpAction=AddResultAction(buttons,"FollowUpButton","",StartFollowUp);
+        copy=AddResultAction(buttons,"CopyResultButton","",()=> {
             SetStatus(Actions.Copy(PlainResult())?"Copied":"ClipboardBusy");
         });
-        replace=ActionButton("ReplaceButton","",async ()=> {
+        replace=AddResultAction(buttons,"ReplaceButton","",async ()=> {
             replace!.IsEnabled=false;
             try {
                 var replaced=await Actions.Replace(selection,PlainResult());
@@ -150,21 +127,19 @@ internal sealed class ResultWindow:Window
             autoCloseTimer.Stop();
             pending?.Cancel();
         };
-        PreviewKeyDown+=(_,e)=> { if(e.Key==System.Windows.Input.Key.Escape) Close(); };
     }
     internal void RefreshLanguage()
     {
         BuiltInPrompts.LocalizeName(prompt);
         Ui.ApplyTextLanguage(this);
         ApplyResultFont();
-        Title=$"PopBar · {prompt.Name}";
-        var selected=T("SelectedCharacterCount",selection.Text.Length);
-        metadata.Text=string.IsNullOrWhiteSpace(settings.Model)?selected:$"{settings.Model}  ·  {selected}";
+        SetResultTitle(prompt.Name,settings.Model);
         stop.Content=T("Stop");
         followUpAction.Content=T("FollowUp");
         copy.Content=T("Copy");
         replace.Content=T("ReplaceOriginal");
         send.Content=T("SendFollowUp");
+        followUpPlaceholder.Text=T("FollowUpPlaceholder");
         followUp.ToolTip=T("FollowUpPrompt");
         System.Windows.Automation.AutomationProperties.SetName(followUp,T("FollowUpPrompt"));
         if(statusKey!=null) status.Text=T(statusKey);

@@ -99,6 +99,7 @@
   <data name="FollowUpPrompt" xml:space="preserve">
     <value>Ask a follow-up or request a correction. Enter sends; Shift+Enter adds a line.</value>
   </data>
+  <data name="FollowUpPlaceholder" xml:space="preserve"><value>Ask a follow-up…</value></data>
   <data name="SendFollowUp" xml:space="preserve">
     <value>Send follow-up</value>
   </data>
@@ -356,8 +357,8 @@ Click Add prompt to get started.</value>
   <data name="SearchUrlHelp" xml:space="preserve">
     <value>Use {text} for the selected text. Example https://www.bing.com/search?q={text}</value>
   </data>
-  <data name="SelectedCharacterCount" xml:space="preserve">
-    <value>{0:N0} characters selected</value>
+  <data name="CloseWindow" xml:space="preserve">
+    <value>Close window</value>
   </data>
   <data name="SelectionBehavior" xml:space="preserve">
     <value>Selection behavior</value>
@@ -491,7 +492,6 @@ Click Add prompt to get started.</value>
   <data name="SmartRateFailed" xml:space="preserve"><value>Exchange-rate lookup failed or timed out. Check your connection and retry.</value></data>
   <data name="SmartRateLoading" xml:space="preserve"><value>Fetching reference rates…</value></data>
   <data name="SmartRateHelp" xml:space="preserve"><value>Results include source and date; actual exchange amounts depend on your bank or payment provider.</value></data>
-  <data name="SmartLocalProcessing" xml:space="preserve"><value>Processed on this device.</value></data>
   <data name="SmartTransformFailed" xml:space="preserve"><value>Conversion failed: {0}</value></data>
   <data name="SmartRetry" xml:space="preserve"><value>Retry</value></data>
   <data name="SmartConversionMode" xml:space="preserve"><value>Conversion mode</value></data>

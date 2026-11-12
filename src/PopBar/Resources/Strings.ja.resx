@@ -99,6 +99,7 @@
   <data name="FollowUpPrompt" xml:space="preserve">
     <value>追加の質問や修正依頼を入力します。Enter で送信、Shift+Enter で改行します。</value>
   </data>
+  <data name="FollowUpPlaceholder" xml:space="preserve"><value>追加の質問を入力…</value></data>
   <data name="SendFollowUp" xml:space="preserve">
     <value>質問を送信</value>
   </data>
@@ -356,8 +357,8 @@
   <data name="SearchUrlHelp" xml:space="preserve">
     <value>選択したテキストは {text} で指定します。例 https://www.bing.com/search?q={text}</value>
   </data>
-  <data name="SelectedCharacterCount" xml:space="preserve">
-    <value>選択範囲 {0:N0} 文字</value>
+  <data name="CloseWindow" xml:space="preserve">
+    <value>ウィンドウを閉じる</value>
   </data>
   <data name="SelectionBehavior" xml:space="preserve">
     <value>テキスト選択時の動作</value>
@@ -491,7 +492,6 @@
   <data name="SmartRateFailed" xml:space="preserve"><value>レートの取得に失敗またはタイムアウトしました。接続を確認して再試行してください。</value></data>
   <data name="SmartRateLoading" xml:space="preserve"><value>参考レートを取得中…</value></data>
   <data name="SmartRateHelp" xml:space="preserve"><value>出典と日付を表示しています。実際の換算額は銀行や決済サービスで確認してください。</value></data>
-  <data name="SmartLocalProcessing" xml:space="preserve"><value>このデバイスで処理しました。</value></data>
   <data name="SmartTransformFailed" xml:space="preserve"><value>変換に失敗しました：{0}</value></data>
   <data name="SmartRetry" xml:space="preserve"><value>再試行</value></data>
   <data name="SmartConversionMode" xml:space="preserve"><value>変換方法</value></data>
