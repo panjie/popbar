@@ -41,8 +41,8 @@ internal static class PromptIcons
 
     internal static TextBlock Create(PromptAction action,out string warning)
     {
-        var text=BuiltInPrompts.DefaultGlyph(action.Name);
-        var family=UiTypography.Icons;
+        var text="✨";
+        var family=UiTypography.Emoji;
         warning="";
         if(action.IconKind is PromptIconKind.Emoji or PromptIconKind.NerdFont) {
             var glyph=Glyph(action);
@@ -59,6 +59,6 @@ internal static class PromptIcons
                 }
             }
         }
-        return new TextBlock { Text=text,FontFamily=family,FontSize=action.IconKind==PromptIconKind.Emoji?19:16,TextAlignment=TextAlignment.Center,VerticalAlignment=VerticalAlignment.Center };
+        return new TextBlock { Text=text,FontFamily=family,FontSize=family==UiTypography.Emoji?19:16,TextAlignment=TextAlignment.Center,VerticalAlignment=VerticalAlignment.Center };
     }
 }

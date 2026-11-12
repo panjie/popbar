@@ -7,8 +7,9 @@ namespace PopBar;
 
 public enum AppTheme { System, Light, Dark }
 public enum ToolbarPlacement { Above, Below }
+// Default is retained only for reading older settings.
 public enum PromptIconKind { Default, Emoji, NerdFont }
-public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged
+public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged,IJsonOnDeserialized
 {
     string name=T("NewPromptName");
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
@@ -22,9 +23,18 @@ public sealed class PromptAction:System.ComponentModel.INotifyPropertyChanged
     }
     public string Prompt { get; set; } = T("NewPromptTemplate");
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public PromptIconKind IconKind { get; set; }
-    public string Icon { get; set; } = "";
+    public PromptIconKind IconKind { get=>iconKind; set { iconKind=value; hasIconKind=true; } }
+    PromptIconKind iconKind=PromptIconKind.Emoji;
+    bool hasIconKind;
+    public string Icon { get; set; } = "✨";
     public string IconFont { get; set; } = "";
+    void IJsonOnDeserialized.OnDeserialized()
+    {
+        if(hasIconKind && IconKind!=PromptIconKind.Default) return;
+        IconKind=PromptIconKind.Emoji;
+        Icon=BuiltInPrompts.LegacyEmoji(Name);
+        IconFont="";
+    }
     internal PromptAction Copy() => new() { Name=Name,Prompt=Prompt,IconKind=IconKind,Icon=Icon,IconFont=IconFont };
 }
 public sealed class Settings

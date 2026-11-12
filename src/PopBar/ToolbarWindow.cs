@@ -51,7 +51,7 @@ internal sealed class ToolbarWindow:Window
         }
         void Add(string glyph,string label,Action run,PromptAction? prompt=null) {
             var button=Ui.GlyphButton(glyph,label,()=> { Hide(); try { run(); } catch(Exception ex) { notify(ex.Message); } });
-            if(prompt!=null && prompt.IconKind!=PromptIconKind.Default) button.Content=new Viewbox { Width=18,Height=18,Stretch=Stretch.Uniform,Child=PromptIcons.Create(prompt,out _) };
+            if(prompt!=null) button.Content=new Viewbox { Width=18,Height=18,Stretch=Stretch.Uniform,Child=PromptIcons.Create(prompt,out _) };
             button.Focusable=false; buttons.Children.Add(button);
         }
         Add("\uE8C8",T("Copy"),()=> { if(!Actions.Copy(selection.Text)) notify(T("ClipboardBusy")); });
@@ -72,8 +72,7 @@ internal sealed class ToolbarWindow:Window
         var path=Actions.ExistingPath(selection.Text); if(path!=null) Add("\uE8B7",T("FileLocation"),()=>Actions.Reveal(path));
         Separator();
         foreach(var action in settings.Prompts.Take(12)) {
-            var glyph=BuiltInPrompts.DefaultGlyph(action.Name);
-            Add(glyph,action.Name,()=>ai(action),action);
+            Add("",action.Name,()=>ai(action),action);
         }
         Separator();
         Add("\uE713",T("Settings"),configure);

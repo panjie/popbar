@@ -66,21 +66,22 @@ public partial class App:Application
     static bool Terminal(string name) => new[]{"WindowsTerminal","OpenConsole","cmd","powershell","pwsh","mintty","wezterm-gui","alacritty"}.Contains(name,StringComparer.OrdinalIgnoreCase);
     async Task Capture(nint window,Native.Point point,bool shift,bool manual)
     {
-        if(probing || window==0 || Native.OwnWindow(window)) return;
+        if(probing || !InputMonitor.CanCaptureWindow(window)) return;
+        var ownResult=System.Windows.Interop.HwndSource.FromHwnd(window)?.RootVisual as ResultWindow;
         var process=Native.ProcessName(window);
         if(settings.Excludes(process)||(!manual&&!settings.Enabled)||(!manual&&settings.TerminalShift&&Terminal(process)&&!shift)) return;
         var version=++generation; probing=true;
         try {
             await Task.Delay(manual?160:100);
             if(generation!=version || Native.GetForegroundWindow()!=window) return;
-            var selection=await SelectionReader.Read(window,point,manual);
-            if(selection==null && !manual && generation==version && Native.GetForegroundWindow()==window) {
+            var selection=ownResult!=null ? ownResult.ReadBodySelection(point,manual) : await SelectionReader.Read(window,point,manual);
+            if(selection==null && ownResult==null && !manual && generation==version && Native.GetForegroundWindow()==window) {
                 // Chromium/WinUI providers can publish the selection after mouse-up.
                 await Task.Delay(120);
                 if(generation!=version || Native.GetForegroundWindow()!=window) return;
                 selection=await SelectionReader.Read(window,point);
             }
-            if(selection==null && manual && !Terminal(process) && generation==version && Native.GetForegroundWindow()==window) selection=await CopyFallback(window);
+            if(selection==null && ownResult==null && manual && !Terminal(process) && generation==version && Native.GetForegroundWindow()==window) selection=await CopyFallback(window);
             if(generation!=version || Native.GetForegroundWindow()!=window) return;
             if(selection==null) { if(manual) Notify(Terminal(process)?T("TerminalSelectionMissing"):T("SelectionMissing")); return; }
             if(Terminal(process)) selection=selection with { Editable=false };

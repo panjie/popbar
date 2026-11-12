@@ -16,6 +16,8 @@ internal sealed class InputMonitor:IDisposable
     internal event Action? Dismiss;
     internal event Action? Hotkey;
     internal bool HotkeyRegistered { get; }
+    internal static bool CanCaptureWindow(nint window) => window!=0 &&
+        (!Native.OwnWindow(window) || HwndSource.FromHwnd(window)?.RootVisual is ResultWindow);
     internal InputMonitor()
     {
         messages=new HwndSource(new HwndSourceParameters("PopBar messages") { ParentWindow=-3,Width=0,Height=0 });
@@ -34,7 +36,7 @@ internal sealed class InputMonitor:IDisposable
                 var msg=(int)w;
                 if(msg==0x201) {
                     var target=Native.GetAncestor(Native.WindowFromPoint(data.Point),2);
-                    pressed=!Native.OwnWindow(target); start=data.Point; startWindow=target; startShift=Native.Down(0x10);
+                    pressed=CanCaptureWindow(target); start=data.Point; startWindow=target; startShift=Native.Down(0x10);
                     if(pressed) Dismiss?.Invoke();
                 } else if(msg==0x202 && pressed) {
                     pressed=false;
@@ -43,7 +45,7 @@ internal sealed class InputMonitor:IDisposable
                     lastUp=Environment.TickCount64; lastClick=data.Point;
                     if((drag||multi||startShift) && !Native.Down(0x5B) && !Native.Down(0x5C)) Selected?.Invoke(startWindow,data.Point,startShift||Native.Down(0x10),false);
                 } else if(msg is 0x204 or 0x207 or 0x20A or 0x20E) {
-                    if(!Native.OwnWindow(Native.GetAncestor(Native.WindowFromPoint(data.Point),2))) Dismiss?.Invoke();
+                    if(CanCaptureWindow(Native.GetAncestor(Native.WindowFromPoint(data.Point),2))) Dismiss?.Invoke();
                 }
             }
         }

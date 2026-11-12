@@ -4,6 +4,7 @@
     <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="SecondarySurfaceBrush" Color="#EEF0F4" />
     <SolidColorBrush x:Key="TextBrush" Color="#1B1F24" />
+    <SolidColorBrush x:Key="MarkdownHeadingBrush" Color="#3E36A8" />
     <SolidColorBrush x:Key="MutedTextBrush" Color="#616874" />
     <SolidColorBrush x:Key="BorderBrush" Color="#D9DDE3" />
     <SolidColorBrush x:Key="AccentBrush" Color="#4F46E5" />

@@ -274,7 +274,7 @@ internal sealed class SettingsWindow:Window
         FieldLabel(promptEditor,T("ToolbarIcon"));
         var iconKind=new ComboBox { Name="PromptIconKind" };
         iconKind.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
-        foreach(var option in new[]{(PromptIconKind.Default,T("DefaultIcon")),(PromptIconKind.Emoji,"Emoji"),(PromptIconKind.NerdFont,"Nerd Font")})
+        foreach(var option in new[]{(PromptIconKind.Emoji,"Emoji"),(PromptIconKind.NerdFont,"Nerd Font")})
             iconKind.Items.Add(new ComboBoxItem { Content=option.Item2,Tag=option.Item1 });
         var iconHeader=new DockPanel { LastChildFill=true };
         promptEditor.Children.Add(iconHeader);
@@ -308,7 +308,6 @@ internal sealed class SettingsWindow:Window
         void UpdateIconPreview()
         {
             var current=Current()??new PromptAction();
-            iconOptions.Visibility=current.IconKind==PromptIconKind.Default?Visibility.Collapsed:Visibility.Visible;
             advanced.Visibility=chooseIcon.Visibility=current.IconKind==PromptIconKind.NerdFont?Visibility.Visible:Visibility.Collapsed;
             iconHint.Text=current.IconKind==PromptIconKind.Emoji?T("EmojiHint"):T("NerdIconHint");
             preview.Content=new Viewbox { Width=22,Height=22,Child=PromptIcons.Create(current,out var warning) };
@@ -333,7 +332,7 @@ internal sealed class SettingsWindow:Window
             empty.Visibility=current==null?Visibility.Visible:Visibility.Collapsed;
             delete.IsEnabled=current!=null;
             nameInput.Text=current?.Name??""; contentInput.Text=current?.Prompt??"";
-            iconKind.SelectedItem=iconKind.Items.Cast<ComboBoxItem>().FirstOrDefault(item=>Equals(item.Tag,current?.IconKind??PromptIconKind.Default))??iconKind.Items[0];
+            iconKind.SelectedItem=iconKind.Items.Cast<ComboBoxItem>().FirstOrDefault(item=>Equals(item.Tag,current?.IconKind??PromptIconKind.Emoji))??iconKind.Items[0];
             iconInput.Text=current?.Icon??"";
             var fontNames=new[]{T("AutomaticFont")}.Concat(PromptIcons.NerdFonts).ToList();
             iconFont.ItemsSource=fontNames; iconFont.SelectedItem=string.IsNullOrWhiteSpace(current?.IconFont)?T("AutomaticFont"):current.IconFont;
@@ -370,7 +369,7 @@ internal sealed class SettingsWindow:Window
                 AiClient.Endpoint(url.Text);
                 Actions.SearchUri(search.Text,"test");
                 if(drafts.Any(x=>string.IsNullOrWhiteSpace(x.Name)||string.IsNullOrWhiteSpace(x.Prompt))) throw new InvalidOperationException(T("PromptRequired"));
-                if(drafts.Any(x=>x.IconKind!=PromptIconKind.Default && PromptIcons.Glyph(x).Length==0)) throw new InvalidOperationException(T("IconRequired"));
+                if(drafts.Any(x=>PromptIcons.Glyph(x).Length==0)) throw new InvalidOperationException(T("IconRequired"));
                 var selectedTheme=(theme.SelectedItem as ComboBoxItem)?.Tag is AppTheme value?value:AppTheme.System;
                 var next=new Settings { Theme=selectedTheme,ToolbarPosition=toolbarPosition.SelectedIndex==1?ToolbarPlacement.Below:ToolbarPlacement.Above,Enabled=enabled.IsChecked==true,TerminalShift=terminal.IsChecked==true,SearchUrl=search.Text.Trim(),ExcludedApps=excluded.Text,BaseUrl=url.Text.Trim(),Model=model.Text.Trim(),EncryptedKey=settings.EncryptedKey,Prompts=drafts.Select(x=> { var copy=x.Copy(); copy.Name=copy.Name.Trim(); return copy; }).ToList() };
                 next.Language=language.SelectedValue is UiLanguage preference?preference:UiLanguage.System;

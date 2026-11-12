@@ -122,6 +122,34 @@ internal sealed class ResultWindow:Window
         replace.Content=T("ReplaceOriginal");
         if(statusKey!=null) status.Text=T(statusKey);
     }
+    // Read our own WPF selection directly; only the result body is eligible.
+    internal Selection? ReadBodySelection(Native.Point point,bool focused=false)
+    {
+        if(closed || !IsVisible) return null;
+        var viewer=FindBodyViewer(output);
+        if(viewer==null) return null;
+        if(focused) {
+            if(!viewer.IsKeyboardFocusWithin) return null;
+        } else {
+            var local=viewer.PointFromScreen(new Point(point.X,point.Y));
+            if(!new Rect(viewer.RenderSize).Contains(local)) return null;
+            var hit=viewer.InputHitTest(local) as DependencyObject;
+            for(var current=hit;current!=null && current!=viewer;) {
+                if(current is System.Windows.Controls.Primitives.ScrollBar) return null;
+                current=current is Visual ? VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current);
+            }
+        }
+        var text=viewer.Selection?.Text;
+        if(string.IsNullOrWhiteSpace(text) || text.Length>SelectionReader.MaxText) return null;
+        return new(new System.Windows.Interop.WindowInteropHelper(this).Handle,text,false,null,null);
+    }
+    static FlowDocumentScrollViewer? FindBodyViewer(DependencyObject root)
+    {
+        if(root is FlowDocumentScrollViewer viewer) return viewer;
+        for(var i=0;i<VisualTreeHelper.GetChildrenCount(root);i++)
+            if(FindBodyViewer(VisualTreeHelper.GetChild(root,i)) is { } found) return found;
+        return null;
+    }
     void SetStatus(string key)
     {
         statusKey=key;

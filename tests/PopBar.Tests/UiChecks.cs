@@ -105,10 +105,17 @@ internal static class UiChecks
         foreach(var value in new[]{@"\udb81",@"\uddca",@"\uddca\udb81",@"\udb81\uF121",@"\uF121\uF122",@"\uXYZ1",@"\uF12",@"\U00110000",@"\U0000D800","\uDB81","\uDDCA",""})
             Check(PromptIcons.Glyph(new PromptAction { IconKind=PromptIconKind.NerdFont,Icon=value })=="",$"invalid nerd input rejected {value}");
         var missing=PromptIcons.Create(new PromptAction { Name="翻译",IconKind=PromptIconKind.NerdFont,Icon="F121",IconFont="Missing Nerd Font For Test" },out var missingWarning);
-        Check(missing.Text=="\uE774" && missingWarning.Length>0,"missing Nerd Font falls back safely");
+        Check(missing.Text=="✨" && missing.FontFamily==UiTypography.Emoji && missingWarning.Length>0,"missing Nerd Font falls back to emoji");
         var restored=System.Text.Json.JsonSerializer.Deserialize<PromptAction>(System.Text.Json.JsonSerializer.Serialize(emojiPrompt.Copy()))!;
         Check(restored.IconKind==PromptIconKind.Emoji && restored.Icon==emojiPrompt.Icon,"icon draft copy and JSON round trip");
-        Check(System.Text.Json.JsonSerializer.Deserialize<PromptAction>("{}")!.IconKind==PromptIconKind.Default,"legacy prompts retain default icons");
+        Check(System.Text.Json.JsonSerializer.Deserialize<PromptAction>("{}")!.IconKind==PromptIconKind.Emoji,"legacy prompts migrate to emoji");
+        foreach(var json in new[]{"{\"Name\":\"翻译\"}","{\"Name\":\"翻译\",\"IconKind\":\"Default\",\"Icon\":\"\"}","{\"Name\":\"翻译\",\"IconKind\":0}"}) {
+            var migrated=System.Text.Json.JsonSerializer.Deserialize<PromptAction>(json)!;
+            Check(migrated.IconKind==PromptIconKind.Emoji && migrated.Icon=="🌐","legacy built-in icon migrates to explicit emoji");
+            migrated.Name="Renamed";
+            Check(PromptIcons.Create(migrated,out _).Text=="🌐","renaming does not change migrated icon");
+        }
+        Check(BuiltInPrompts.Create().All(action=>action.IconKind==PromptIconKind.Emoji && PromptIcons.Glyph(action).Length>0),"preset buttons store emoji icons");
         foreach(var family in new[]{"JetBrainsMono NF","JetBrainsMono NFM","JetBrainsMono NFP","JetBrainsMonoNL NF","JetBrainsMonoNL NFM","JetBrainsMonoNL NFP","jetbrainsmono nf"})
             Check(PromptIcons.IsNerdFontFamily(family),$"detect Nerd Font family {family}");
         foreach(var family in new[]{"Segoe UI","JetBrains Mono","Maple Mono","NFranklin","Info Font","Maple Mono NF CN","Maple Mono Normal NF CN","Symbols Nerd Font"})
@@ -165,7 +172,8 @@ internal static class UiChecks
             var panel=Descendants<WrapPanel>(toolbar).Single();
             var buttons=panel.Children.OfType<Button>().ToList();
             var names=new[] { "复制","搜索","翻译","解释","润色","设置" };
-            Check(buttons.Count==names.Length && buttons.All(button=>button.Content is TextBlock),"toolbar uses icon-only buttons");
+            Check(buttons.Count==names.Length && buttons.All(button=>button.Content is TextBlock or Viewbox),"toolbar uses icon-only buttons");
+            Check(buttons.Skip(2).Take(3).Select(button=>((TextBlock)((Viewbox)button.Content).Child).Text).SequenceEqual(new[]{"🌐","💡","✍️"}),"toolbar renders preset emoji icons");
             Check(buttons.Select(button=>button.ToolTip as string).SequenceEqual(names) && buttons.Select(AutomationProperties.GetName).SequenceEqual(names),"toolbar button names and order");
             Check(buttons.All(button=>!button.Focusable) && !toolbar.ShowActivated,"toolbar does not take focus");
             Check(panel.Children.OfType<Border>().Any(border=>border.Width==1),"toolbar visual group separators");
@@ -339,12 +347,13 @@ internal static class UiChecks
             name.Text="草稿";
             var iconKind=FindNamed<ComboBox>(settingsWindow,"PromptIconKind");
             var iconInput=FindNamed<TextBox>(settingsWindow,"PromptIconInput");
-            iconKind.SelectedIndex=1; iconInput.Text="🌐";
-            Check(((PromptAction)list.SelectedItem).Icon=="🌐" && sourceSettings.Prompts[1].Icon=="","icon editor uses isolated draft");
+            Check(iconKind.Items.Count==2 && iconKind.SelectedIndex==0,"icon editor offers emoji and Nerd Font only");
+            iconKind.SelectedIndex=0; iconInput.Text="🌐";
+            Check(((PromptAction)list.SelectedItem).Icon=="🌐" && sourceSettings.Prompts[1].Icon=="💡","icon editor uses isolated draft");
             list.SelectedIndex=0; list.SelectedIndex=1;
-            Check(iconKind.SelectedIndex==1 && iconInput.Text=="🌐","icon selection survives switching prompts");
+            Check(iconKind.SelectedIndex==0 && iconInput.Text=="🌐","icon selection survives switching prompts");
             Capture(settingsWindow,"settings-emoji");
-            iconKind.SelectedIndex=2; iconInput.Text="U+F05CA";
+            iconKind.SelectedIndex=1; iconInput.Text="U+F05CA";
             Capture(settingsWindow,"settings-nerd-compact");
             var fontOptions=FindNamed<Expander>(settingsWindow,"PromptIconAdvanced");
             fontOptions.IsExpanded=true;
@@ -479,11 +488,14 @@ internal static class UiChecks
             var hugeStarted=System.Diagnostics.Stopwatch.StartNew();
             resultWindow.RenderMarkdown(huge);
             Check(hugeStarted.Elapsed<TimeSpan.FromSeconds(30) && MarkdownText.Plain(output.Document!).Contains("结尾标记"),"near-limit markdown renders within budget");
-            resultWindow.RenderMarkdown("## 读音（假名）\n\n> じしんの りかいが なかなか おいつかない ぶぶんが おおく、しりょうを はいけんし きになる てんを まとめました。\n\n**难读词提示**\n\n- 自身：じしん\n- 追い付かない：おいつかない\n- 拝見し：はいけんし\n\n---\n\n## 例句\n\n短い例文を `メモ` に残します。");
+            resultWindow.RenderMarkdown("## 日语学习笔记\n\n这句话常用于商务邮件中，表示看过资料后整理了几个想确认的问题。\n\n「拝見する」是「見る」的自谦表达，语气礼貌。\n\n### 原文与读音\n\n> 資料を拝見し、気になる点をまとめました。\n> しりょうを はいけんし、きになる てんを まとめました。\n\n### 词语提示\n\n- 拝見（はいけん）：拜读、查看\n- 気になる（きになる）：在意、想确认");
             var finalDocument=output.Document!;
             var finalRoot=(FrameworkElement)resultWindow.Content;
             finalRoot.Measure(new Size(664,561)); finalRoot.Arrange(new Rect(0,0,664,561)); finalRoot.UpdateLayout();
             var finalHeading=finalDocument.Blocks.OfType<System.Windows.Documents.Paragraph>().First(block=>Equals(block.Tag,"Heading2"));
+            var bodyParagraph=finalDocument.Blocks.OfType<System.Windows.Documents.Paragraph>().First(block=>block.Tag==null);
+            Check(finalHeading.FontWeight==FontWeights.Bold && bodyParagraph.Margin.Bottom>=12,
+                "markdown has bold headings and distinct paragraph spacing");
             ThemeManager.Apply(AppTheme.Light);
             var resultLight=((SolidColorBrush)resultWindow.Background).Color;
             var outputLight=((SolidColorBrush)output.Background).Color;
@@ -491,7 +503,9 @@ internal static class UiChecks
             ThemeManager.Apply(AppTheme.Dark);
             Check(((SolidColorBrush)resultWindow.Background).Color!=resultLight,"result window updates theme");
             Check(((SolidColorBrush)output.Background).Color!=outputLight,"result markdown follows theme");
-            Check(headingLight is not null && (finalHeading.Foreground as SolidColorBrush)?.Color!=headingLight,"markdown headings follow theme");
+            var headingDark=(finalHeading.Foreground as SolidColorBrush)?.Color;
+            Check(headingLight is not null && headingDark is not null && headingLight!=headingDark &&
+                headingDark!=(bodyParagraph.Foreground as SolidColorBrush)?.Color,"markdown heading colors follow the theme and differ from body text");
             Capture(resultWindow,"result");
         } finally { resultWindow.Close(); }
 
@@ -506,6 +520,36 @@ internal static class UiChecks
             WindowPresentation.ShowForeground(manualClosePreview);
             VoidPump();
             Check(manualClosePreview.IsActive,"manual close preview receives focus");
+            manualClosePreview.RenderMarkdown("正文选区测试\n\n```\nvar answer = 42;\n```");
+            manualClosePreview.UpdateLayout();
+            var bodyViewer=Descendants<FlowDocumentScrollViewer>(manualClosePreview).Single();
+            var bodyParagraph=bodyViewer.Document.Blocks.OfType<System.Windows.Documents.Paragraph>().First();
+            bodyViewer.Selection.Select(bodyParagraph.ContentStart,bodyParagraph.ContentEnd);
+            var bodyPoint=bodyViewer.PointToScreen(new Point(40,25));
+            var selectionPoint=new Native.Point((int)bodyPoint.X,(int)bodyPoint.Y);
+            var bodySelection=manualClosePreview.ReadBodySelection(selectionPoint);
+            var resultHandle=new System.Windows.Interop.WindowInteropHelper(manualClosePreview).Handle;
+            Check(InputMonitor.CanCaptureWindow(resultHandle) && bodySelection is { Text:"正文选区测试",Editable:false } && bodySelection.Window==resultHandle,
+                "result body selection is allowed and read-only");
+            var footerPoint=FindNamed<Button>(manualClosePreview,"CopyResultButton").PointToScreen(new Point(5,5));
+            Check(manualClosePreview.ReadBodySelection(new Native.Point((int)footerPoint.X,(int)footerPoint.Y))==null,
+                "result footer ignores an existing body selection");
+            bodyViewer.Focus();
+            Check(manualClosePreview.ReadBodySelection(selectionPoint,true)?.Text=="正文选区测试","result body supports keyboard selection capture");
+            FindNamed<Button>(manualClosePreview,"CopyResultButton").Focus();
+            Check(manualClosePreview.ReadBodySelection(selectionPoint,true)==null,"result footer focus cannot capture stale body selection");
+            var codeParagraph=bodyViewer.Document.Blocks.OfType<System.Windows.Documents.Paragraph>().Single(block=>Equals(block.Tag,"CodeBlock"));
+            bodyViewer.Selection.Select(codeParagraph.ContentStart,codeParagraph.ContentEnd);
+            Check(manualClosePreview.ReadBodySelection(selectionPoint)?.Text.Contains("var answer = 42;")==true,"result code selection is readable");
+            bodyViewer.Selection.Select(bodyParagraph.ContentStart,bodyParagraph.ContentStart);
+            Check(manualClosePreview.ReadBodySelection(selectionPoint)==null,"empty result selection is ignored");
+            var ignoredSettings=new SettingsWindow(new Settings(),_=>{});
+            var ignoredToolbar=new ToolbarWindow();
+            try {
+                Check(!InputMonitor.CanCaptureWindow(new System.Windows.Interop.WindowInteropHelper(ignoredSettings).EnsureHandle()) &&
+                    !InputMonitor.CanCaptureWindow(new System.Windows.Interop.WindowInteropHelper(ignoredToolbar).EnsureHandle()),
+                    "settings and toolbar windows remain excluded");
+            } finally { ignoredSettings.Close(); ignoredToolbar.Close(); }
             WindowPresentation.ShowForeground(autoClosePreview);
             VoidPump();
             Check(autoClosePreview.IsActive && !manualClosePreview.IsActive,"auto-close preview receives focus");

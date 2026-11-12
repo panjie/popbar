@@ -4,43 +4,51 @@
         <Setter Property="FontFamily" Value="{DynamicResource ResultBodyFont}" />
         <Setter Property="FontSize" Value="{DynamicResource ResultBodySize}" />
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-        <Setter Property="PagePadding" Value="16,7,12,12" />
+        <Setter Property="PagePadding" Value="16,9,14,14" />
         <Setter Property="LineHeight" Value="{DynamicResource ResultLineHeight}" />
         <Style.Resources>
             <Style TargetType="Paragraph">
-                <Setter Property="Margin" Value="0,0,0,8" />
+                <Setter Property="Margin" Value="0,0,0,14" />
                 <Style.Triggers>
                     <Trigger Property="Tag" Value="Heading1">
                         <Setter Property="FontSize" Value="{DynamicResource ResultHeading1Size}" />
-                        <Setter Property="FontWeight" Value="SemiBold" />
-                        <Setter Property="Margin" Value="0,12,0,6" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Foreground" Value="{DynamicResource MarkdownHeadingBrush}" />
+                        <Setter Property="Margin" Value="0,16,0,9" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Heading2">
                         <Setter Property="FontSize" Value="{DynamicResource ResultHeading2Size}" />
-                        <Setter Property="FontWeight" Value="SemiBold" />
-                        <Setter Property="Margin" Value="0,10,0,5" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Foreground" Value="{DynamicResource MarkdownHeadingBrush}" />
+                        <Setter Property="Margin" Value="0,14,0,8" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Heading3">
                         <Setter Property="FontSize" Value="{DynamicResource ResultHeading3Size}" />
-                        <Setter Property="FontWeight" Value="SemiBold" />
-                        <Setter Property="Margin" Value="0,8,0,4" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Foreground" Value="{DynamicResource MarkdownHeadingBrush}" />
+                        <Setter Property="Margin" Value="0,12,0,6" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Heading4">
-                        <Setter Property="FontWeight" Value="SemiBold" />
-                        <Setter Property="Margin" Value="0,8,0,4" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Foreground" Value="{DynamicResource MarkdownHeadingBrush}" />
+                        <Setter Property="Margin" Value="0,10,0,6" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Heading5">
-                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Foreground" Value="{DynamicResource MarkdownHeadingBrush}" />
+                        <Setter Property="Margin" Value="0,10,0,5" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Heading6">
-                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Foreground" Value="{DynamicResource MarkdownHeadingBrush}" />
+                        <Setter Property="Margin" Value="0,8,0,5" />
                     </Trigger>
                     <Trigger Property="Tag" Value="CodeBlock">
                         <Setter Property="FontFamily" Value="{DynamicResource ResultCodeFont}" />
                         <Setter Property="FontSize" Value="{DynamicResource ResultCodeSize}" />
                         <Setter Property="Background" Value="{DynamicResource SecondarySurfaceBrush}" />
                         <Setter Property="Padding" Value="10,7" />
-                        <Setter Property="Margin" Value="0,4,0,10" />
+                        <Setter Property="Margin" Value="0,4,0,14" />
                     </Trigger>
                     <Trigger Property="Tag" Value="Note">
                         <Setter Property="Background" Value="{DynamicResource SecondarySurfaceBrush}" />
@@ -49,7 +57,7 @@
                 </Style.Triggers>
             </Style>
             <Style TargetType="List">
-                <Setter Property="Margin" Value="0,0,0,6" />
+                <Setter Property="Margin" Value="0,2,0,12" />
                 <Setter Property="Padding" Value="22,0,0,0" />
                 <Setter Property="MarkerOffset" Value="4" />
             </Style>
@@ -68,7 +76,7 @@
                         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                         <Setter Property="BorderThickness" Value="2,0,0,0" />
                         <Setter Property="Padding" Value="10,2,0,0" />
-                        <Setter Property="Margin" Value="0,4,0,8" />
+                        <Setter Property="Margin" Value="0,4,0,12" />
                     </Trigger>
                 </Style.Triggers>
             </Style>
@@ -86,10 +94,10 @@
             </Style>
             <Style TargetType="Separator">
                 <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                <Setter Property="Margin" Value="0,6" />
+                <Setter Property="Margin" Value="0,10" />
             </Style>
             <Style TargetType="Table">
-                <Setter Property="Margin" Value="0,4,0,10" />
+                <Setter Property="Margin" Value="0,4,0,14" />
                 <Setter Property="CellSpacing" Value="0" />
                 <Setter Property="BorderThickness" Value="1,1,0,0" />
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
