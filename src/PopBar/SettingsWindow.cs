@@ -64,6 +64,7 @@ internal sealed class SettingsWindow:Window
         var (placementPage,placement)=StandardPage("ToolbarPlacementPage",T("ToolbarPlacementPageTitle"),T("ToolbarPositionHelp"));
         var (aiPage,ai)=StandardPage("AiPage",T("AiService"),T("AiServiceDescription"));
         var promptsPage=new Grid { Name="PromptsPage",Visibility=Visibility.Collapsed }; pages.Children.Add(promptsPage);
+        var (smartPage,smart)=StandardPage("SmartButtonsPage",T("SmartButtons"),T("SmartButtonsDescription"));
 
         Button Navigation(string name,string glyph,string label)
         {
@@ -76,7 +77,8 @@ internal sealed class SettingsWindow:Window
         var placementNav=Navigation("ToolbarPlacementNavigationButton","\uE7C4",T("ToolbarPlacementPageTitle"));
         var aiNav=Navigation("AiNavigationButton","\uE73E",T("AiService"));
         var promptsNav=Navigation("PromptsNavigationButton","\uE70F",T("Prompts"));
-        var navigationPages=new[]{(generalPage,generalNav),(placementPage,placementNav),(aiPage,aiNav),(promptsPage,promptsNav)};
+        var smartNav=Navigation("SmartButtonsNavigationButton","\uE8EF",T("SmartButtons"));
+        var navigationPages=new[]{(generalPage,generalNav),(placementPage,placementNav),(aiPage,aiNav),(promptsPage,promptsNav),(smartPage,smartNav)};
         void ShowPage(Grid selected)
         {
             foreach(var (page,button) in navigationPages) {
@@ -217,24 +219,44 @@ internal sealed class SettingsWindow:Window
         UpdateFontPreview();
         general.Children.Add(autoCloseResult);
 
-        Section(general,T("SmartButtons"));
+        var aiSmartAnalysis=new CheckBox { Name="AiSmartAnalysisEnabled",Content=T("SmartAiAutomatic"),IsChecked=settings.AiSmartAnalysis };
+        smart.Children.Add(aiSmartAnalysis);
+        var aiSmartHelp=Text(T("SmartAiAutomaticHelp"),12,true);
+        aiSmartHelp.Margin=new Thickness(0,6,0,0);
+        smart.Children.Add(aiSmartHelp);
+
+        var smartPromptLabel=FieldLabel(smart,T("SmartAiPrompt"));
+        var smartPrompt=Ui.Input(AiSmartAnalysis.EffectivePrompt(settings.AiSmartPrompt),multiline:true);
+        smartPrompt.Name="AiSmartPromptInput";
+        smartPrompt.Height=144;
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(smartPrompt,smartPromptLabel);
+        smart.Children.Add(smartPrompt);
+        var smartPromptHelp=Text(T("SmartAiPromptHelp"),12,true);
+        smartPromptHelp.Margin=new Thickness(0,6,0,0);
+        smart.Children.Add(smartPromptHelp);
+        var restoreSmartPrompt=Ui.Button(T("SmartAiPromptRestore"),()=>smartPrompt.Text=AiSmartAnalysis.DefaultPrompt);
+        restoreSmartPrompt.Name="RestoreAiSmartPromptButton";
+        restoreSmartPrompt.HorizontalAlignment=HorizontalAlignment.Right;
+        restoreSmartPrompt.Margin=new Thickness(0,8,0,0);
+        smart.Children.Add(restoreSmartPrompt);
+
+        Section(smart,T("SmartCurrency"));
         var currencyEnabled=new CheckBox { Name="CurrencyConversionEnabled",Content=T("SmartCurrencyEnabled"),IsChecked=settings.CurrencyConversion };
-        general.Children.Add(currencyEnabled);
-        var targetLabel=FieldLabel(general,T("SmartCurrencyTarget"));
+        smart.Children.Add(currencyEnabled);
+        var targetLabel=FieldLabel(smart,T("SmartCurrencyTarget"));
         var currencyTarget=new ComboBox { Name="CurrencyTargetSelector",ItemsSource=new[]{"CNY","JPY","USD"},SelectedItem=settings.CurrencyTarget };
         currencyTarget.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
         System.Windows.Automation.AutomationProperties.SetLabeledBy(currencyTarget,targetLabel);
         if(currencyTarget.SelectedIndex<0) currencyTarget.SelectedIndex=0;
-        general.Children.Add(currencyTarget);
-        var sourceLabel=FieldLabel(general,T("SmartCurrencySource"));
+        smart.Children.Add(currencyTarget);
+        var sourceLabel=FieldLabel(smart,T("SmartCurrencySource"));
         var currencySource=new ComboBox { Name="CurrencySourceSelector",ItemsSource=MoneyParser.Currencies,SelectedItem=MoneyParser.Normalize(settings.CurrencySource) };
         currencySource.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
         System.Windows.Automation.AutomationProperties.SetLabeledBy(currencySource,sourceLabel);
-        general.Children.Add(currencySource);
-        general.Children.Add(Text(T("SmartCurrencySettingsHelp"),12,true));
-        var aiSmartAnalysis=new CheckBox { Name="AiSmartAnalysisEnabled",Content=T("SmartAiAutomatic"),IsChecked=settings.AiSmartAnalysis,Margin=new Thickness(0,10,0,0) };
-        general.Children.Add(aiSmartAnalysis);
-        general.Children.Add(Text(T("SmartAiAutomaticHelp"),12,true));
+        smart.Children.Add(currencySource);
+        var currencyHelp=Text(T("SmartCurrencySettingsHelp"),12,true);
+        currencyHelp.Margin=new Thickness(0,6,0,0);
+        smart.Children.Add(currencyHelp);
 
         Section(general,T("SearchAndExclusions"));
         var search=Field(general,T("SearchUrl"),settings.SearchUrl,T("SearchUrlHelp"));
@@ -414,6 +436,9 @@ internal sealed class SettingsWindow:Window
                 next.DeepSeekFlashThinking=thinking.IsChecked==true;
                 next.CurrencyConversion=currencyEnabled.IsChecked==true;
                 next.AiSmartAnalysis=aiSmartAnalysis.IsChecked==true;
+                var customSmartPrompt=smartPrompt.Text.ReplaceLineEndings("\n").Trim();
+                if(customSmartPrompt.Length>0 && customSmartPrompt!=AiSmartAnalysis.DefaultPrompt.ReplaceLineEndings("\n"))
+                    next.AiSmartPrompt=customSmartPrompt;
                 next.CurrencyTarget=currencyTarget.SelectedItem as string??"CNY";
                 next.CurrencySource=currencySource.SelectedItem as string??"CNY";
                 if(clear.IsChecked==true) next.SetKey("");

@@ -496,6 +496,7 @@
   <data name="SmartRetry" xml:space="preserve"><value>再試行</value></data>
   <data name="SmartConversionMode" xml:space="preserve"><value>変換方法</value></data>
   <data name="SmartButtons" xml:space="preserve"><value>スマートボタン</value></data>
+  <data name="SmartButtonsDescription" xml:space="preserve"><value>自動分析と通貨換算を設定します。</value></data>
   <data name="SmartCurrencyEnabled" xml:space="preserve"><value>通貨換算ボタンを自動表示</value></data>
   <data name="SmartCurrencyTarget" xml:space="preserve"><value>既定の換算先（CNY 人民元 / JPY 日本円 / USD 米ドル）</value></data>
   <data name="SmartCurrencySource" xml:space="preserve"><value>換算元の通貨が不明な場合</value></data>
@@ -506,6 +507,9 @@
   <data name="SmartAiMoneySource" xml:space="preserve"><value>AIが参照した原文：「{0}」</value></data>
   <data name="SmartAiMoneyReview" xml:space="preserve"><value>AIが抽出した金額と通貨を原文と照合してください。換算には参考レートを使用しています。</value></data>
   <data name="SmartAiAutomatic" xml:space="preserve"><value>AIでスマートボタンを自動追加</value></data>
+  <data name="SmartAiPrompt" xml:space="preserve"><value>バックグラウンドAIプロンプト</value></data>
+  <data name="SmartAiPromptHelp" xml:space="preserve"><value>認識ルールや例を編集できます。必要な出力形式はPopBarが追加します。空欄の場合は既定のプロンプトを使用します。</value></data>
+  <data name="SmartAiPromptRestore" xml:space="preserve"><value>既定のプロンプトに戻す</value></data>
   <data name="SmartAiAnalyzing" xml:space="preserve"><value>選択したテキストを分析中</value></data>
   <data name="SmartAiAutomaticHelp" xml:space="preserve"><value>AIモデルを設定すると、ツールバーの表示時に選択テキストを設定済みのサービスに自動送信し、利用可能なスマート操作を判定します。</value></data>
   <data name="SmartAiResultReview" xml:space="preserve"><value>認識結果を原文と照合してください。</value></data>

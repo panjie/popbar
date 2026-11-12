@@ -64,16 +64,22 @@ internal static class SmartChecks
         Check(SmartActions.DetectAll("2.5億円",defaults).Single().Kind==SmartActionKind.Currency&&Actions.Link("https://example.com/2.5USD")!=null,"decimal currency amounts are not domains and explicit URLs remain links");
         Check(Actions.Link("127.0.0.1")!=null&&Actions.Link("https://example.com")!=null,"normal IPv4 and URL actions retained");
         const string aiSelection="売上は五億円です。";
+        const string customPrompt="Recognize Japanese accounting expressions.";
         var aiSettings=new Settings { Model="test-model" };
         Check(SmartActions.DetectAll(aiSelection,aiSettings).Count==0
             && SmartActions.DetectAll("500百万円",aiSettings).Single().Kind==SmartActionKind.Currency
             && SmartActions.DetectAll(aiSelection,defaults).Count==0,"local toolbar has no standalone AI action");
         var missing=AiSmartAnalysis.Supported.ToHashSet();
         const string aiJson="""{"money":[{"amount":500000000,"currency":"JPY","source":"五億円"}]}""";
-        using var model=new MoneyModelHandler(aiSelection,aiJson);
+        using var model=new MoneyModelHandler(aiSelection,aiJson,AiSmartAnalysis.DefaultPrompt);
         var suggested=await AiSmartAnalysis.Analyze(aiSettings,aiSelection,missing,default,model);
         var extracted=suggested.Single().Amounts!;
         Check(extracted.Single() is { Amount:500000000m,Currency:"JPY",Original:"五億円" },"AI stream extracts an amount anchored to the selection");
+        var configuredAi=JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(new Settings { Model="test-model",AiSmartPrompt=customPrompt }))!;
+        using var customModel=new MoneyModelHandler(aiSelection,aiJson,customPrompt);
+        var customResult=await AiSmartAnalysis.Analyze(configuredAi,aiSelection,missing,default,customModel);
+        Check(customResult.Single().Kind==SmartActionKind.Currency &&
+              AiSmartAnalysis.EffectivePrompt(" \t")==AiSmartAnalysis.DefaultPrompt,"saved custom prompt reaches the model and blank uses default");
         var aiConverted=await CurrencyConversion.Convert(extracted,"CNY",default,(from,to,_)=> {
             Check(from=="JPY"&&to=="CNY","rate lookup uses the extracted currency pair");
             return Task.FromResult(new CurrencyRate(from,to,0.05m,new DateOnly(2026,1,2)));
@@ -102,14 +108,18 @@ internal static class SmartChecks
         await Fails(()=>CurrencyConversion.Convert(amounts,"USD",cancellation.Token),"conversion cancellation honored");
         return count;
     }
-    sealed class MoneyModelHandler(string selection,string response):HttpMessageHandler
+    sealed class MoneyModelHandler(string selection,string response,string expectedPrompt):HttpMessageHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
         {
             using var payload=JsonDocument.Parse(await request.Content!.ReadAsStringAsync(token));
             var messages=payload.RootElement.GetProperty("messages");
             if(messages.GetArrayLength()!=2 || messages[0].GetProperty("role").GetString()!="system" ||
-               messages[1].GetProperty("role").GetString()!="user" || messages[1].GetProperty("content").GetString()!=selection)
+               messages[1].GetProperty("role").GetString()!="user" || messages[1].GetProperty("content").GetString()!=selection ||
+               messages[0].GetProperty("content").GetString() is not string systemPrompt ||
+               !systemPrompt.StartsWith(expectedPrompt+"\n\n",StringComparison.Ordinal) ||
+               !systemPrompt.Contains("Return one JSON object",StringComparison.Ordinal) ||
+               !systemPrompt.Contains("Requested keys:",StringComparison.Ordinal))
                 throw new Exception("Unexpected AI money request");
             var delta=JsonSerializer.Serialize(new { choices=new[]{new { delta=new { content=response } }} });
             return new HttpResponseMessage(HttpStatusCode.OK) { Content=new StringContent("data: "+delta+"\n\ndata: [DONE]\n\n",Encoding.UTF8,"text/event-stream") };

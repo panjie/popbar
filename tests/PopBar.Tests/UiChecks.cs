@@ -418,7 +418,7 @@ internal static class UiChecks
         } finally { activationToolbar.Close(); foregroundResult.Close(); origin.Close(); System.Windows.Forms.Cursor.Position=oldCursor; }
 
         var chosenFont=Fonts.SystemFontFamilies.First(font=>font.Source=="Consolas");
-        var sourceSettings=new Settings { ResultFontFamily=chosenFont.Source,ResultFontSize=18 };
+        var sourceSettings=new Settings { ResultFontFamily=chosenFont.Source,ResultFontSize=18,AiSmartPrompt="Saved recognition rules" };
         sourceSettings.SetKey("test-settings-key");
         var settingsWindow=new SettingsWindow(sourceSettings,_=>{});
         try {
@@ -452,11 +452,34 @@ internal static class UiChecks
             var position=FindNamed<ComboBox>(settingsWindow,"ToolbarPositionSelector");
             var resultFont=FindNamed<ComboBox>(settingsWindow,"ResultFontSelector");
             var resultSize=FindNamed<ComboBox>(settingsWindow,"ResultFontSizeSelector");
-            var currencyTarget=FindNamed<ComboBox>(settingsWindow,"CurrencyTargetSelector");
-            var currencySource=FindNamed<ComboBox>(settingsWindow,"CurrencySourceSelector");
-            Check(FindNamed<CheckBox>(settingsWindow,"CurrencyConversionEnabled").IsChecked==true&&currencyTarget.Items.Cast<string>().SequenceEqual(new[]{"CNY","JPY","USD"}),"currency settings enabled with three target currencies");
+            var smartPage=FindNamed<FrameworkElement>(settingsWindow,"SmartButtonsPage");
+            var smartNav=FindNamed<Button>(settingsWindow,"SmartButtonsNavigationButton");
+            Check(smartNav.Parent is StackPanel sidebar && sidebar.Children[^1]==smartNav,"smart buttons settings are last in the sidebar");
+            Check(smartPage.Visibility==Visibility.Collapsed,"smart buttons settings are separate from general settings");
+            Click(smartNav);
+            Check(smartPage.Visibility==Visibility.Visible && generalPage.Visibility==Visibility.Collapsed &&
+                  aiPage.Visibility==Visibility.Collapsed && promptsPage.Visibility==Visibility.Collapsed,"smart buttons settings have their own navigation");
+            var currencyTarget=FindNamed<ComboBox>(smartPage,"CurrencyTargetSelector");
+            var currencySource=FindNamed<ComboBox>(smartPage,"CurrencySourceSelector");
+            var currencyEnabled=FindNamed<CheckBox>(smartPage,"CurrencyConversionEnabled");
+            var aiSmartAnalysis=FindNamed<CheckBox>(smartPage,"AiSmartAnalysisEnabled");
+            var smartPrompt=FindNamed<TextBox>(smartPage,"AiSmartPromptInput");
+            Check(smartPrompt.Text==sourceSettings.AiSmartPrompt,"smart analysis editor opens with the saved prompt");
+            Check(currencyEnabled.IsChecked==true&&currencyTarget.Items.Cast<string>().SequenceEqual(new[]{"CNY","JPY","USD"}),"currency settings enabled with three target currencies");
+            Capture(settingsWindow,"settings-smart-buttons");
             currencyTarget.SelectedItem="JPY"; currencySource.SelectedItem="USD";
-            Check(sourceSettings.CurrencyTarget=="CNY"&&sourceSettings.CurrencySource=="CNY","currency settings stay a draft until saved");
+            currencyEnabled.IsChecked=false; aiSmartAnalysis.IsChecked=false;
+            smartPrompt.Text="Draft recognition rules";
+            Click(generalNav); Click(smartNav);
+            Check(Equals(currencyTarget.SelectedItem,"JPY") && Equals(currencySource.SelectedItem,"USD") &&
+                  currencyEnabled.IsChecked==false && aiSmartAnalysis.IsChecked==false &&
+                  sourceSettings.CurrencyTarget=="CNY" && sourceSettings.CurrencySource=="CNY" &&
+                  sourceSettings.CurrencyConversion && sourceSettings.AiSmartAnalysis &&
+                  smartPrompt.Text=="Draft recognition rules","smart buttons edits survive navigation as a draft");
+            Click(FindNamed<Button>(smartPage,"RestoreAiSmartPromptButton"));
+            Check(smartPrompt.Text.ReplaceLineEndings("\n")==AiSmartAnalysis.DefaultPrompt.ReplaceLineEndings("\n") &&
+                  sourceSettings.AiSmartPrompt=="Saved recognition rules","restoring the default prompt edits only the draft");
+            Click(generalNav);
             Check(Equals(resultFont.SelectedValue,chosenFont.Source) && Equals(resultSize.SelectedItem,18),"settings load saved result font and size");
             var placementPage=FindNamed<FrameworkElement>(settingsWindow,"ToolbarPlacementPage");
             Check(placementPage.Visibility==Visibility.Collapsed,"app placement list is separate from general settings");

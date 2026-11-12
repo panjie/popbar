@@ -56,6 +56,8 @@ public sealed class Settings:IJsonOnDeserializing,IJsonOnDeserialized
     public bool TerminalShift { get; set; } = true;
     public bool CurrencyConversion { get; set; } = true;
     public bool AiSmartAnalysis { get; set; } = true;
+    [JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
+    public string? AiSmartPrompt { get; set; }
     public string CurrencyTarget { get; set; } = "CNY";
     public string CurrencySource { get; set; } = "CNY";
     public bool AutoCloseResultOnDeactivate { get; set; } = true;

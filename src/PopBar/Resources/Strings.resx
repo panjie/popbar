@@ -496,6 +496,7 @@ Click Add prompt to get started.</value>
   <data name="SmartRetry" xml:space="preserve"><value>Retry</value></data>
   <data name="SmartConversionMode" xml:space="preserve"><value>Conversion mode</value></data>
   <data name="SmartButtons" xml:space="preserve"><value>Smart buttons</value></data>
+  <data name="SmartButtonsDescription" xml:space="preserve"><value>Configure automatic analysis and currency conversion.</value></data>
   <data name="SmartCurrencyEnabled" xml:space="preserve"><value>Show currency conversion automatically</value></data>
   <data name="SmartCurrencyTarget" xml:space="preserve"><value>Default target currency (CNY / JPY / USD)</value></data>
   <data name="SmartCurrencySource" xml:space="preserve"><value>When source currency is unclear</value></data>
@@ -506,6 +507,9 @@ Click Add prompt to get started.</value>
   <data name="SmartAiMoneySource" xml:space="preserve"><value>AI source text: “{0}”</value></data>
   <data name="SmartAiMoneyReview" xml:space="preserve"><value>Check the AI-extracted amounts and currencies against the original text. Conversion uses reference rates.</value></data>
   <data name="SmartAiAutomatic" xml:space="preserve"><value>Use AI to add smart buttons automatically</value></data>
+  <data name="SmartAiPrompt" xml:space="preserve"><value>Background AI prompt</value></data>
+  <data name="SmartAiPromptHelp" xml:space="preserve"><value>Edit the recognition rules and examples. PopBar adds the required output format. Leave blank to use the default prompt.</value></data>
+  <data name="SmartAiPromptRestore" xml:space="preserve"><value>Restore default prompt</value></data>
   <data name="SmartAiAnalyzing" xml:space="preserve"><value>Analyzing selected text</value></data>
   <data name="SmartAiAutomaticHelp" xml:space="preserve"><value>With an AI model configured, showing the toolbar automatically sends selected text to your configured service to identify available smart actions.</value></data>
   <data name="SmartAiResultReview" xml:space="preserve"><value>Check the recognized input against the original text.</value></data>

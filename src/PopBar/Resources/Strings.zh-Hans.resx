@@ -496,6 +496,7 @@
   <data name="SmartRetry" xml:space="preserve"><value>重试</value></data>
   <data name="SmartConversionMode" xml:space="preserve"><value>转换方式</value></data>
   <data name="SmartButtons" xml:space="preserve"><value>智能按钮</value></data>
+  <data name="SmartButtonsDescription" xml:space="preserve"><value>配置自动分析和汇率转换。</value></data>
   <data name="SmartCurrencyEnabled" xml:space="preserve"><value>自动显示汇率转换按钮</value></data>
   <data name="SmartCurrencyTarget" xml:space="preserve"><value>默认目标币种（CNY 人民币 / JPY 日元 / USD 美元）</value></data>
   <data name="SmartCurrencySource" xml:space="preserve"><value>币种不明确时使用</value></data>
@@ -506,6 +507,9 @@
   <data name="SmartAiMoneySource" xml:space="preserve"><value>AI 识别原文：「{0}」</value></data>
   <data name="SmartAiMoneyReview" xml:space="preserve"><value>请对照原文核对 AI 识别的金额和币种。换算使用参考汇率。</value></data>
   <data name="SmartAiAutomatic" xml:space="preserve"><value>自动用 AI 补充智能按钮</value></data>
+  <data name="SmartAiPrompt" xml:space="preserve"><value>后台 AI 提示词</value></data>
+  <data name="SmartAiPromptHelp" xml:space="preserve"><value>可调整识别规则和示例。PopBar 会自动附上输出格式要求。留空使用默认提示词。</value></data>
+  <data name="SmartAiPromptRestore" xml:space="preserve"><value>恢复默认提示词</value></data>
   <data name="SmartAiAnalyzing" xml:space="preserve"><value>正在分析选中文字</value></data>
   <data name="SmartAiAutomaticHelp" xml:space="preserve"><value>配置 AI 模型后，工具栏显示时会自动将选中文字发送给已配置的服务，以识别可用的智能操作。</value></data>
   <data name="SmartAiResultReview" xml:space="preserve"><value>请对照原文核对识别结果。</value></data>
