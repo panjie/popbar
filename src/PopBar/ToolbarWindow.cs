@@ -33,7 +33,7 @@ internal sealed class ToolbarWindow:Window
     internal void RefreshLanguage()
     {
         Title=T("ToolbarTitle");
-        Language=UiText.MarkupLanguage;
+        Ui.ApplyTextLanguage(this);
     }
     void Fade(double target)
     {

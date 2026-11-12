@@ -209,6 +209,35 @@ internal static class UiChecks
                     Check(languagePreview.Title.EndsWith(promptName,StringComparison.Ordinal) &&
                         Equals(FindNamed<Button>(languagePreview,"CopyResultButton").Content,copyLabel) &&
                         builtIn.Prompt==originalTemplate && customPrompt.Name=="我的提示词",$"open result switches to {tag} without changing prompt text");
+                    languagePreview.RenderMarkdown("# 表示言語\n\n本文と `設定`\n\n```\n表示言語\n```");
+                    var document=FindNamed<MdXaml.MarkdownScrollViewer>(languagePreview,"OutputMarkdown").Document!;
+                    Check(document.FontFamily.Source==localizedSettings.FontFamily.Source &&
+                        document.Blocks.OfType<System.Windows.Documents.Paragraph>().Single(block=>Equals(block.Tag,"CodeBlock"))
+                            .FontFamily.Source.Contains(localizedSettings.FontFamily.Source.Split(',')[0],StringComparison.Ordinal),
+                        $"result body and code use the {tag} system font preferences");
+
+                    TextBlock RenderLanguageSelection(UiLanguage value)
+                    {
+                        selector.SelectedValue=value;
+                        var content=(FrameworkElement)localizedSettings.Content;
+                        var size=new Size(804,641);
+                        content.Measure(size); content.Arrange(new Rect(size)); content.UpdateLayout();
+                        var bitmap=new System.Windows.Media.Imaging.RenderTargetBitmap(804,641,96,96,PixelFormats.Pbgra32);
+                        bitmap.Render(content);
+                        var selected=(ContentPresenter)selector.Template.FindName("ContentSite",selector);
+                        return Descendants<TextBlock>(selected).Single();
+                    }
+                    var nativeJapanese=RenderLanguageSelection(UiLanguage.Japanese);
+                    Check(nativeJapanese.Text=="日本語" && nativeJapanese.FontFamily.Source.StartsWith("Yu Gothic UI",StringComparison.Ordinal),
+                        $"Japanese language option keeps its native font in {tag}");
+                    var systemLabel=RenderLanguageSelection(UiLanguage.System);
+                    Check(systemLabel.Text==UiText.T("SystemDefault") && systemLabel.FontFamily.Source==localizedSettings.FontFamily.Source,
+                        $"Follow Windows selector uses the current {tag} UI font");
+                    if(choice==UiLanguage.Japanese && Fonts.SystemFontFamilies.Any(font=>font.Source=="Yu Gothic UI")) {
+                        var glyphs=GlyphRuns(VisualTreeHelper.GetDrawing(systemLabel)).ToArray();
+                        Check(glyphs.Length>0 && glyphs.All(run=>run.GlyphTypeface.FamilyNames.Values.Contains("Yu Gothic UI")),
+                            "Japanese Follow Windows selector actually renders Yu Gothic UI glyphs");
+                    }
                     Capture(localizedSettings,$"settings-{tag}-general");
                     FindNamed<Button>(localizedSettings,"AiNavigationButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     Capture(localizedSettings,$"settings-{tag}-ai");
@@ -341,8 +370,12 @@ internal static class UiChecks
             Check(editorScroll.ScrollableHeight>0,"minimum settings size scrolls prompt editor");
             Capture(settingsWindow,"settings-minimum-full");
 
-            WindowPresentation.ShowForeground(settingsWindow);
             var firstDraft=(PromptAction)list.Items[0];
+            list.SelectedItem=firstDraft;
+            // The test uses real pointer input, so keep its window above other desktop apps.
+            settingsWindow.Topmost=true;
+            WindowPresentation.ShowForeground(settingsWindow);
+            PumpFor(100);
             list.ScrollIntoView(firstDraft);
             PumpFor(100);
             var firstRow=(ListBoxItem)list.ItemContainerGenerator.ContainerFromIndex(0);
@@ -377,6 +410,7 @@ internal static class UiChecks
                 dragTimer.Stop();
                 mouse_event(4,0,0,0,0);
                 System.Windows.Forms.Cursor.Position=savedCursor;
+                settingsWindow.Topmost=false;
             }
         } finally { settingsWindow.Close(); }
 
@@ -497,6 +531,14 @@ internal static class UiChecks
 
         app.Shutdown();
         return passed;
+    }
+
+    static IEnumerable<GlyphRun> GlyphRuns(Drawing? drawing)
+    {
+        if(drawing is GlyphRunDrawing glyph) yield return glyph.GlyphRun;
+        if(drawing is DrawingGroup group)
+            foreach(var child in group.Children)
+                foreach(var run in GlyphRuns(child)) yield return run;
     }
 
     // Optional off-screen visual artifacts; never starts requests or writes user settings.

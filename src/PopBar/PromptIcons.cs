@@ -42,12 +42,12 @@ internal static class PromptIcons
     internal static TextBlock Create(PromptAction action,out string warning)
     {
         var text=BuiltInPrompts.DefaultGlyph(action.Name);
-        var family="Segoe Fluent Icons, Segoe MDL2 Assets";
+        var family=UiTypography.Icons;
         warning="";
         if(action.IconKind is PromptIconKind.Emoji or PromptIconKind.NerdFont) {
             var glyph=Glyph(action);
             if(glyph.Length==0) warning=T("IconMissing");
-            else if(action.IconKind==PromptIconKind.Emoji) { text=glyph; family="Segoe UI Emoji, Segoe UI Symbol"; }
+            else if(action.IconKind==PromptIconKind.Emoji) { text=glyph; family=UiTypography.Emoji; }
             else {
                 var font=string.IsNullOrWhiteSpace(action.IconFont)?NerdFonts.FirstOrDefault():NerdFonts.FirstOrDefault(name=>string.Equals(name,action.IconFont,StringComparison.OrdinalIgnoreCase));
                 if(font==null) warning=T("IconFontMissing");
@@ -55,10 +55,10 @@ internal static class PromptIcons
                     var typeface=new Typeface(new FontFamily(font),FontStyles.Normal,FontWeights.Normal,FontStretches.Normal);
                     if(!typeface.TryGetGlyphTypeface(out var face) || !face.CharacterToGlyphMap.TryGetValue(glyph.EnumerateRunes().First().Value,out var index) || index==0)
                         warning=T("IconUnsupported");
-                    else { text=glyph; family=font; }
+                    else { text=glyph; family=typeface.FontFamily; }
                 }
             }
         }
-        return new TextBlock { Text=text,FontFamily=new FontFamily(family),FontSize=action.IconKind==PromptIconKind.Emoji?19:16,TextAlignment=TextAlignment.Center,VerticalAlignment=VerticalAlignment.Center };
+        return new TextBlock { Text=text,FontFamily=family,FontSize=action.IconKind==PromptIconKind.Emoji?19:16,TextAlignment=TextAlignment.Center,VerticalAlignment=VerticalAlignment.Center };
     }
 }

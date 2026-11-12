@@ -14,6 +14,7 @@ internal sealed class ResultWindow:Window
     readonly TextBlock metadata;
     readonly Button retry,stop,replace,copy;
     string? statusKey="PreparingRequest";
+    string? preferredFont;
     readonly DispatcherTimer autoCloseTimer=new() { Interval=TimeSpan.FromSeconds(5) };
     bool autoCloseOnDeactivate;
     CancellationTokenSource? pending;
@@ -110,7 +111,8 @@ internal sealed class ResultWindow:Window
     internal void RefreshLanguage()
     {
         BuiltInPrompts.LocalizeName(prompt);
-        Language=UiText.MarkupLanguage;
+        Ui.ApplyTextLanguage(this);
+        ApplyResultFont();
         Title=$"PopBar · {prompt.Name}";
         var selected=T("SelectedCharacterCount",selection.Text.Length);
         metadata.Text=string.IsNullOrWhiteSpace(settings.Model)?selected:$"{settings.Model}  ·  {selected}";
@@ -127,18 +129,23 @@ internal sealed class ResultWindow:Window
     }
     internal void ApplyTypography(Settings preferences)
     {
+        preferredFont=preferences.ResultFontFamily;
+        ApplyResultFont();
         var size=ResultTypography.NormalizeSize(preferences.ResultFontSize);
-        var font=ResultTypography.ResolveFont(preferences.ResultFontFamily);
-        output.FontFamily=font;
         output.FontSize=size;
-        output.Resources["ResultBodyFont"]=font;
-        output.Resources["ResultCodeFont"]=ReferenceEquals(font,ResultTypography.DefaultFont)?ResultTypography.DefaultCodeFont:font;
         output.Resources["ResultBodySize"]=(double)size;
         output.Resources["ResultLineHeight"]=Math.Round(size*20.0/ResultTypography.DefaultSize);
         output.Resources["ResultHeading1Size"]=(double)(size+6);
         output.Resources["ResultHeading2Size"]=(double)(size+3);
         output.Resources["ResultHeading3Size"]=(double)(size+1);
         output.Resources["ResultCodeSize"]=(double)(size-1);
+    }
+    void ApplyResultFont()
+    {
+        var font=ResultTypography.ResolveFont(preferredFont);
+        output.FontFamily=font;
+        output.Resources["ResultBodyFont"]=font;
+        output.Resources["ResultCodeFont"]=ReferenceEquals(font,ResultTypography.DefaultFont)?ResultTypography.DefaultCodeFont:font;
     }
     internal void SetAutoCloseOnDeactivate(bool enabled)
     {

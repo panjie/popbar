@@ -2,6 +2,8 @@ namespace PopBar;
 
 internal sealed class SettingsWindow:Window
 {
+    sealed record LanguageOption(UiLanguage Value,string Label,FontFamily Font,System.Windows.Markup.XmlLanguage Language);
+
     internal SettingsWindow(Settings settings,Action<Settings> saved)
     {
         Title=T("SettingsWindowTitle"); Width=820; Height=680; MinWidth=680; MinHeight=480; WindowStartupLocation=WindowStartupLocation.CenterScreen; Ui.Style(this);
@@ -65,7 +67,7 @@ internal sealed class SettingsWindow:Window
         Button Navigation(string name,string glyph,string label)
         {
             var content=new StackPanel { Orientation=Orientation.Horizontal };
-            content.Children.Add(new TextBlock { Text=glyph,FontFamily=new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),FontSize=16,VerticalAlignment=VerticalAlignment.Center });
+            content.Children.Add(new TextBlock { Text=glyph,FontFamily=UiTypography.Icons,FontSize=16,VerticalAlignment=VerticalAlignment.Center });
             content.Children.Add(new TextBlock { Text=label,Margin=new Thickness(11,0,0,0),VerticalAlignment=VerticalAlignment.Center });
             var button=new Button { Name=name,Content=content }; button.SetResourceReference(FrameworkElement.StyleProperty,"NavigationButtonStyle"); navigation.Children.Add(button); return button;
         }
@@ -88,12 +90,19 @@ internal sealed class SettingsWindow:Window
 
         var languageLabel=FieldLabel(general,T("UiLanguage"));
         languageLabel.Margin=new Thickness(0,0,0,6);
-        var language=new ComboBox { Name="LanguageSelector",SelectedValuePath="Tag" };
+        var language=new ComboBox {
+            Name="LanguageSelector",SelectedValuePath=nameof(LanguageOption.Value),
+            ItemTemplate=(DataTemplate)FindResource("LanguageOptionTemplate")
+        };
         language.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
         System.Windows.Automation.AutomationProperties.SetLabeledBy(language,languageLabel);
+        TextSearch.SetTextPath(language,nameof(LanguageOption.Label));
         foreach(var (value,label) in new[]{(UiLanguage.System,T("SystemDefault")),(UiLanguage.Chinese,"简体中文"),
-                                         (UiLanguage.Japanese,"日本語"),(UiLanguage.English,"English")})
-            language.Items.Add(new ComboBoxItem { Tag=value,Content=label });
+                                         (UiLanguage.Japanese,"日本語"),(UiLanguage.English,"English")}) {
+            var culture=UiText.Resolve(value,UiText.Culture);
+            language.Items.Add(new LanguageOption(value,label,UiTypography.ForLanguage(culture),
+                System.Windows.Markup.XmlLanguage.GetLanguage(culture.IetfLanguageTag)));
+        }
         language.SelectedValue=settings.Language;
         if(language.SelectedIndex<0) language.SelectedIndex=0;
         general.Children.Add(language);
@@ -306,7 +315,8 @@ internal sealed class SettingsWindow:Window
             var inputFont=current.IconKind==PromptIconKind.NerdFont
                 ? (string.IsNullOrWhiteSpace(current.IconFont)?PromptIcons.NerdFonts.FirstOrDefault():current.IconFont)
                 : null;
-            iconInput.FontFamily=inputFont==null?FontFamily:new FontFamily(inputFont+", Segoe UI");
+            iconInput.FontFamily=current.IconKind==PromptIconKind.Emoji?UiTypography.Emoji:
+                inputFont==null?FontFamily:new FontFamily($"{inputFont}, {FontFamily.Source}");
             iconWarning.Text=warning;
             iconWarning.Visibility=warning.Length==0?Visibility.Collapsed:Visibility.Visible;
         }

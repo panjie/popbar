@@ -6,11 +6,21 @@ internal static class Ui
     {
         window.SetResourceReference(Window.BackgroundProperty,"WindowBackgroundBrush");
         window.SetResourceReference(Window.ForegroundProperty,"TextBrush");
-        window.FontFamily=new FontFamily("Segoe UI Variable, Segoe UI, Microsoft YaHei UI");
         window.FontSize=13;
-        window.Language=UiText.MarkupLanguage;
+        ApplyTextLanguage(window);
         window.Icon=System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/PopBar;component/Assets/PopBar.ico"));
         window.SourceInitialized+=(_,_)=>ThemeManager.ApplyTitleBar(window);
+    }
+    internal static void ApplyTextLanguage(Window window)
+    {
+        var font=UiTypography.ForLanguage(UiText.Culture);
+        var language=UiText.MarkupLanguage;
+        window.FontFamily=font;
+        window.Language=language;
+        // ToolTips open in a separate visual tree and need their own text defaults.
+        var resources=Application.Current.Resources;
+        if(!Equals(resources["UiFontFamily"],font)) resources["UiFontFamily"]=font;
+        if(!Equals(resources["UiMarkupLanguage"],language)) resources["UiMarkupLanguage"]=language;
     }
     internal static Button Button(string label,Action action,string styleKey="SecondaryButtonStyle")
     {
@@ -21,7 +31,7 @@ internal static class Ui
     internal static Button GlyphButton(string glyph,string name,Action action)
     {
         var b=Button("",action,"ToolbarButtonStyle");
-        b.Content=new TextBlock { Text=glyph,FontFamily=new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),FontSize=14 };
+        b.Content=new TextBlock { Text=glyph,FontFamily=UiTypography.Icons,FontSize=14 };
         b.ToolTip=name;
         System.Windows.Automation.AutomationProperties.SetName(b,name);
         return b;
