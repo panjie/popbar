@@ -7,6 +7,7 @@ internal sealed record Selection(nint Window,string Text,bool Editable,Automatio
 internal static class SelectionReader
 {
     internal const int MaxText=65536;
+    internal const int ProviderTimeoutMs=1500;
     // A single worker slot prevents a hung provider from creating an unbounded pool of calls.
     static readonly SemaphoreSlim Gate=new(1);
     internal static string Diagnostic { get; private set; }="";
@@ -15,10 +16,11 @@ internal static class SelectionReader
         if(!Gate.Wait(0)) { Diagnostic="provider busy"; return null; }
         Diagnostic="no selection";
         var task=Task.Run(()=> { try { return read(); } catch(Exception ex) { Diagnostic=ex.GetType().Name; return null; } finally { Gate.Release(); } });
-        if(await Task.WhenAny(task,Task.Delay(1500))==task) return await task;
+        if(await Task.WhenAny(task,Task.Delay(ProviderTimeoutMs))==task) return await task;
         Diagnostic="provider timeout"; return null;
     }
-    internal static Task<Selection?> Read(nint window,Native.Point p,bool focused=false) => Run(()=>ReadNow(window,p,focused));
+    internal static Task<Selection?> Read(nint window,Native.Point p,bool focused=false) => Run(() =>
+        ReadNow(window,p,focused) ?? PowerPointSelection.Read(window,p,focused) ?? MarkTextSelection.Read(window,p,focused));
     static Selection? ReadNow(nint window,Native.Point p,bool focused)
     {
         var point=new Point(p.X,p.Y);
