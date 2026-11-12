@@ -13,7 +13,7 @@
     <value>＋ 添加提示词</value>
   </data>
   <data name="AiPrivacy" xml:space="preserve">
-    <value>只有点击 AI 按钮时才会发送选中文字。当前支持 OpenAI 兼容 Chat Completions 协议。</value>
+    <value>点击 AI 按钮或发送追问时会向服务发送选中文字；追问会再次提交原始选区和当前结果窗口中的对话。当前支持 OpenAI 兼容 Chat Completions 协议。</value>
   </data>
   <data name="AiResultWindow" xml:space="preserve">
     <value>AI 结果窗口</value>
@@ -86,6 +86,24 @@
   </data>
   <data name="Copy" xml:space="preserve">
     <value>复制</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>AI</value>
+  </data>
+  <data name="ConversationTooLong" xml:space="preserve">
+    <value>当前对话过长，请重新发起 AI 操作。</value>
+  </data>
+  <data name="FollowUp" xml:space="preserve">
+    <value>追问</value>
+  </data>
+  <data name="FollowUpPrompt" xml:space="preserve">
+    <value>继续追问或要求修正。Enter 发送，Shift+Enter 换行。</value>
+  </data>
+  <data name="SendFollowUp" xml:space="preserve">
+    <value>发送追问</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>你</value>
   </data>
   <data name="Cut" xml:space="preserve">
     <value>剪切</value>
@@ -422,6 +440,12 @@
   </data>
   <data name="ToolbarIconPreview" xml:space="preserve">
     <value>工具栏实际显示效果</value>
+  </data>
+  <data name="ToolbarOpacity" xml:space="preserve">
+    <value>工具条空闲透明度</value>
+  </data>
+  <data name="ToolbarOpacityHelp" xml:space="preserve">
+    <value>鼠标移入前工具条的透明度；100% 表示完全不透明。</value>
   </data>
   <data name="ToolbarPosition" xml:space="preserve">
     <value>工具条显示位置</value>

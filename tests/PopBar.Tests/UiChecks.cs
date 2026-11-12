@@ -1,4 +1,5 @@
 using PopBar;
+using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -14,7 +15,18 @@ internal static class UiChecks
     {
         var passed=0;
         Exception? error=null;
-        var thread=new Thread(()=> { try { passed=RunOnUiThread(); } catch(Exception ex) { error=ex; } });
+        var thread=new Thread(()=> {
+            try {
+                var task=RunOnUiThread();
+                while(!task.IsCompleted) {
+                    var frame=new System.Windows.Threading.DispatcherFrame();
+                    System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(
+                        System.Windows.Threading.DispatcherPriority.Background,new Action(()=>frame.Continue=false));
+                    System.Windows.Threading.Dispatcher.PushFrame(frame);
+                }
+                passed=task.GetAwaiter().GetResult();
+            } catch(Exception ex) { error=ex; }
+        });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         thread.Join();
@@ -22,7 +34,7 @@ internal static class UiChecks
         return passed;
     }
 
-    static int RunOnUiThread()
+    static async Task<int> RunOnUiThread()
     {
         var testFont=Environment.GetEnvironmentVariable("POPBAR_TEST_NERD_FONT");
         var testFamily=string.IsNullOrEmpty(testFont)?null:Fonts.GetFontFamilies(System.IO.Path.GetDirectoryName(testFont)!+System.IO.Path.DirectorySeparatorChar).First();
@@ -168,7 +180,7 @@ internal static class UiChecks
             System.Windows.Forms.Cursor.Position=new System.Drawing.Point(0,0);
             toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings(),()=>{},_=>{},_=>{});
             var toolbarSurface=(Border)toolbar.Content;
-            Check(toolbarSurface.Name=="ToolbarSurface" && Math.Abs(toolbarSurface.Opacity-ToolbarWindow.IdleOpacity)<0.001,"toolbar starts semi-transparent");
+            Check(toolbarSurface.Name=="ToolbarSurface" && Math.Abs(toolbarSurface.Opacity-ToolbarWindow.DefaultIdleOpacity)<0.001,"toolbar starts semi-transparent");
             var panel=Descendants<WrapPanel>(toolbar).Single();
             var buttons=panel.Children.OfType<Button>().ToList();
             var names=new[] { "复制","搜索","翻译","解释","润色","设置" };
@@ -182,8 +194,9 @@ internal static class UiChecks
             toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent });
             PumpFor(250);
             Check(Math.Abs(toolbarSurface.Opacity-1)<0.001,"toolbar hover becomes opaque");
-            toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings { Prompts=new(){emojiPrompt} },()=>{},_=>{},_=>{});
-            Check(!toolbarSurface.HasAnimatedProperties && Math.Abs(toolbarSurface.Opacity-ToolbarWindow.IdleOpacity)<0.001,"toolbar presentation resets idle opacity");
+            toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings { ToolbarIdleOpacity=65,Prompts=new(){emojiPrompt} },()=>{},_=>{},_=>{});
+            Check(!toolbarSurface.HasAnimatedProperties && Math.Abs(toolbarSurface.Opacity-0.65)<0.001,
+                "toolbar presentation resets to the configured idle opacity");
             var custom=Descendants<Button>(toolbar).Single(item=>AutomationProperties.GetName(item)=="自定义");
             Check(custom.Content is Viewbox box && box.Child is TextBlock text && text.Text=="👩‍💻" && !custom.Focusable,"toolbar renders custom emoji without focus");
             toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent });
@@ -191,7 +204,7 @@ internal static class UiChecks
             Check(Math.Abs(toolbarSurface.Opacity-1)<0.001,"toolbar hover becomes opaque after present");
             toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseLeaveEvent });
             PumpFor(250);
-            Check(Math.Abs(toolbarSurface.Opacity-ToolbarWindow.IdleOpacity)<0.001,"toolbar leave returns to idle opacity");
+            Check(Math.Abs(toolbarSurface.Opacity-0.65)<0.001,"toolbar leave returns to the configured idle opacity");
             Capture(toolbar,"toolbar-emoji");
         } finally { toolbar.Close(); System.Windows.Forms.Cursor.Position=toolbarCursor; }
 
@@ -319,6 +332,7 @@ internal static class UiChecks
             Click(generalNav);
             Check(generalPage.Visibility==Visibility.Visible && aiPage.Visibility!=Visibility.Visible && promptsPage.Visibility!=Visibility.Visible,"settings general navigation");
             var theme=FindNamed<ComboBox>(settingsWindow,"ThemeSelector");
+            var toolbarOpacity=FindNamed<ComboBox>(settingsWindow,"ToolbarOpacitySelector");
             var position=FindNamed<ComboBox>(settingsWindow,"ToolbarPositionSelector");
             var resultFont=FindNamed<ComboBox>(settingsWindow,"ResultFontSelector");
             var resultSize=FindNamed<ComboBox>(settingsWindow,"ResultFontSizeSelector");
@@ -330,6 +344,12 @@ internal static class UiChecks
             var toggle=(System.Windows.Controls.Primitives.ToggleButton)theme.Template.FindName("ToggleButton",theme);
             Check(Equals(toggle.Background,theme.Background) && Equals(toggle.BorderBrush,theme.BorderBrush),"theme selector surface and border bindings");
             Check(theme.Items.Cast<ComboBoxItem>().Select(item=>item.Tag).SequenceEqual(new object[]{AppTheme.System,AppTheme.Light,AppTheme.Dark}) && Equals((theme.SelectedItem as ComboBoxItem)?.Tag,AppTheme.System),"settings theme options");
+            Check(toolbarOpacity.Items.Cast<ComboBoxItem>().Select(item=>item.Tag).SequenceEqual(Enumerable.Range(2,19).Select(step=>(object)(step*5))) &&
+                Equals((toolbarOpacity.SelectedItem as ComboBoxItem)?.Tag,35) &&
+                Equals((toolbarOpacity.SelectedItem as ComboBoxItem)?.Content,"35%"),
+                "toolbar opacity settings options, percentage label and default");
+            toolbarOpacity.SelectedItem=toolbarOpacity.Items.Cast<ComboBoxItem>().Single(item=>Equals(item.Tag,65));
+            Check(sourceSettings.ToolbarIdleOpacity==35,"toolbar opacity remains a draft until saved");
 
             Click(promptsNav);
             Capture(settingsWindow,"settings-prompts");
@@ -445,14 +465,16 @@ internal static class UiChecks
             var output=FindNamed<MdXaml.MarkdownScrollViewer>(resultWindow,"OutputMarkdown");
             var status=FindNamed<TextBlock>(resultWindow,"StatusText");
             var stop=FindNamed<Button>(resultWindow,"StopButton");
-            var retry=FindNamed<Button>(resultWindow,"RetryButton");
+            var followUpAction=FindNamed<Button>(resultWindow,"FollowUpButton");
             var copy=FindNamed<Button>(resultWindow,"CopyResultButton");
             var replace=FindNamed<Button>(resultWindow,"ReplaceButton");
-            Check(!replace.IsEnabled,"replacement disabled before a completed request");
+            Check(!replace.IsEnabled && followUpAction.Visibility==Visibility.Collapsed &&
+                FindNamed<Border>(resultWindow,"FollowUpComposer").Visibility==Visibility.Collapsed,
+                "replacement and follow-up controls start hidden");
             Check(resultWindow.Title.Contains("翻译") && LogicalDescendants<TextBlock>(resultWindow).Any(text=>text.Text.Contains("test-model") && text.Text.Contains("5")) && status.Text.Length>0,"result title, metadata and status");
             Check(!output.IsToolBarVisible && output.IsSelectionEnabled && output.VerticalScrollBarVisibility==ScrollBarVisibility.Auto && output.HorizontalScrollBarVisibility==ScrollBarVisibility.Disabled,"result output is selectable scrolling markdown");
             Check(output.ClickAction==MdXaml.ClickAction.SafetyOpenBrowser,"result links use safe browser command");
-            Check(ReferenceEquals(stop.Style,app.FindResource("DangerButtonStyle")) && ReferenceEquals(retry.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(copy.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(replace.Style,app.FindResource("PrimaryButtonStyle")),"result action styles");
+            Check(ReferenceEquals(stop.Style,app.FindResource("DangerButtonStyle")) && ReferenceEquals(followUpAction.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(copy.Style,app.FindResource("SubtleButtonStyle")) && ReferenceEquals(replace.Style,app.FindResource("PrimaryButtonStyle")),"result action styles");
             resultWindow.Append("第一段");
             resultWindow.Append("第二段");
             Check(MarkdownText.Plain(output.Document!)=="第一段","streaming render is throttled");
@@ -508,6 +530,153 @@ internal static class UiChecks
                 headingDark!=(bodyParagraph.Foreground as SolidColorBrush)?.Color,"markdown heading colors follow the theme and differ from body text");
             Capture(resultWindow,"result");
         } finally { resultWindow.Close(); }
+
+        var conversationRequests=new List<IReadOnlyList<ChatMessage>>();
+        var conversationSettings=new List<Settings>();
+        var conversationResponses=new Queue<Func<Action<string>,Task>>();
+        conversationResponses.Enqueue(append=> { append("初答"); return Task.CompletedTask; });
+        conversationResponses.Enqueue(append=> { append("修正"); append("答"); return Task.CompletedTask; });
+        conversationResponses.Enqueue(append=> { append("键盘回答"); return Task.CompletedTask; });
+        conversationResponses.Enqueue(append=> { append("新设置回答"); return Task.CompletedTask; });
+        var conversationWindow=new ResultWindow(new Settings { Model="test-model" },
+            new PromptAction { Name="翻译",Prompt="Translate {{text}}" },new Selection(0,"hello",false,null,null),
+            (requestSettings,messages,append,_,_)=> {
+                conversationSettings.Add(requestSettings);
+                conversationRequests.Add(messages.ToArray());
+                return conversationResponses.Dequeue()(append);
+            });
+        try {
+            await conversationWindow.Run();
+            var followUp=FindNamed<TextBox>(conversationWindow,"FollowUpInput");
+            var followUpAction=FindNamed<Button>(conversationWindow,"FollowUpButton");
+            var composer=FindNamed<Border>(conversationWindow,"FollowUpComposer");
+            var sendFollowUp=FindNamed<Button>(conversationWindow,"SendFollowUpButton");
+            var conversationStatus=FindNamed<TextBlock>(conversationWindow,"StatusText");
+            var conversationOutput=FindNamed<MdXaml.MarkdownScrollViewer>(conversationWindow,"OutputMarkdown");
+            Check(followUp.AcceptsReturn && followUp.TextWrapping==TextWrapping.Wrap &&
+                followUp.VerticalScrollBarVisibility==ScrollBarVisibility.Auto && !sendFollowUp.IsEnabled &&
+                followUp.MinHeight==32 && followUp.VerticalContentAlignment==VerticalAlignment.Center,
+                "follow-up composer is compact, multiline and vertically centered");
+            Check(followUpAction.Visibility==Visibility.Visible && composer.Visibility==Visibility.Collapsed &&
+                conversationStatus.Text.Length==0 &&
+                LogicalDescendants<Button>(conversationWindow).All(button=>button.Name!="RetryButton"),
+                "completed result hides follow-up input, status text and the old retry button");
+            Capture(conversationWindow,"result-complete");
+            followUpAction.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(composer.Visibility==Visibility.Visible && followUpAction.Visibility==Visibility.Collapsed,
+                "follow-up button reveals the composer and replaces itself");
+            followUp.Text="第二点不对，请修正";
+            Check(sendFollowUp.IsEnabled,"follow-up send enabled for non-empty input");
+            await conversationWindow.SendFollowUp();
+            Check(conversationRequests.Count==2 && conversationRequests[1].SequenceEqual(new[] {
+                    new ChatMessage("user","Translate hello"),
+                    new ChatMessage("assistant","初答"),
+                    new ChatMessage("user","第二点不对，请修正") }),
+                "follow-up submits the complete conversation snapshot");
+            var conversationText=MarkdownText.Plain(conversationOutput.Document!);
+            Check(conversationText.Contains("初答") && conversationText.Contains("第二点不对，请修正") &&
+                conversationText.Contains("修正答") && conversationStatus.Text.Length==0,
+                "result window shows users and both assistant turns without a completion label");
+            Check(conversationWindow.PlainResult()=="修正答","copy uses only the latest assistant answer");
+            followUp.Text="键盘追问";
+            Check(!await conversationWindow.HandleFollowUpKeyAsync(System.Windows.Input.Key.Enter,System.Windows.Input.ModifierKeys.Shift) &&
+                !await conversationWindow.HandleFollowUpKeyAsync(System.Windows.Input.Key.ImeProcessed,System.Windows.Input.ModifierKeys.None) &&
+                conversationRequests.Count==2,"shift-enter and IME keys do not send follow-ups");
+            Check(await conversationWindow.HandleFollowUpKeyAsync(System.Windows.Input.Key.Enter,System.Windows.Input.ModifierKeys.None) &&
+                conversationRequests.Count==3 && followUp.Text.Length==0,"enter sends a non-empty follow-up");
+            var updatedSettings=new Settings { Model="updated-model" };
+            conversationWindow.ApplySettings(updatedSettings);
+            followUp.Text="新设置追问";
+            await conversationWindow.SendFollowUp();
+            Check(ReferenceEquals(conversationSettings[^1],updatedSettings) &&
+                LogicalDescendants<TextBlock>(conversationWindow).Any(text=>text.Text.Contains("updated-model")),
+                "settings saved during a conversation apply to later follow-ups");
+            Capture(conversationWindow,"result-followup");
+        } finally { conversationWindow.Close(); }
+
+        var partialRequests=new List<IReadOnlyList<ChatMessage>>();
+        var partialResponses=new Queue<Func<Action<string>,Task>>();
+        partialResponses.Enqueue(append=> { append("完整初答"); return Task.CompletedTask; });
+        partialResponses.Enqueue(append=> { append("部分回答"); throw new InvalidDataException("模拟失败"); });
+        partialResponses.Enqueue(append=> { append("补全回答"); return Task.CompletedTask; });
+        partialResponses.Enqueue(_=> throw new InvalidDataException("空回答失败"));
+        partialResponses.Enqueue(append=> { append("最终回答"); return Task.CompletedTask; });
+        var partialWindow=new ResultWindow(new Settings { Model="test-model" },
+            new PromptAction { Name="翻译",Prompt="Translate {{text}}" },new Selection(0,"hello",false,null,null),
+            (_,messages,append,_,_)=> {
+                partialRequests.Add(messages.ToArray());
+                return partialResponses.Dequeue()(append);
+            });
+        try {
+            await partialWindow.Run();
+            FindNamed<Button>(partialWindow,"FollowUpButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var partialInput=FindNamed<TextBox>(partialWindow,"FollowUpInput");
+            partialInput.Text="第一次追问";
+            await partialWindow.SendFollowUp();
+            Check(partialWindow.PlainResult()=="部分回答","failed streaming keeps its partial assistant answer");
+            partialInput.Text="基于部分继续";
+            await partialWindow.SendFollowUp();
+            Check(partialRequests[2].SequenceEqual(new[] {
+                    new ChatMessage("user","Translate hello"),
+                    new ChatMessage("assistant","完整初答"),
+                    new ChatMessage("user","第一次追问"),
+                    new ChatMessage("assistant","部分回答"),
+                    new ChatMessage("user","基于部分继续") }),
+                "follow-up after a failure includes the visible partial answer");
+            partialInput.Text="空回答后继续";
+            await partialWindow.SendFollowUp();
+            partialInput.Text="最终追问";
+            await partialWindow.SendFollowUp();
+            Check(partialRequests[4].Count(message=>message.Role=="assistant")==3 &&
+                partialRequests[4].All(message=>message.Content.Length>0),
+                "empty failed answers never enter conversation history");
+        } finally { partialWindow.Close(); }
+
+        var pendingGate=new TaskCompletionSource();
+        var pendingResponses=new Queue<Func<Action<string>,Task>>();
+        pendingResponses.Enqueue(append=> { append("初答"); return Task.CompletedTask; });
+        pendingResponses.Enqueue(_=>pendingGate.Task);
+        var pendingWindow=new ResultWindow(new Settings { Model="test-model" },
+            new PromptAction { Name="翻译",Prompt="Translate {{text}}" },new Selection(0,"hello",false,null,null),
+            (_,_,append,_,_)=>pendingResponses.Dequeue()(append));
+        try {
+            await pendingWindow.Run();
+            FindNamed<Button>(pendingWindow,"FollowUpButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var pendingInput=FindNamed<TextBox>(pendingWindow,"FollowUpInput");
+            var pendingSend=FindNamed<Button>(pendingWindow,"SendFollowUpButton");
+            pendingInput.Text="等待中的追问";
+            var pendingRequest=pendingWindow.SendFollowUp();
+            Check(!pendingSend.IsEnabled,"follow-up send is disabled while a request is pending");
+            pendingInput.Text="请求期间继续编辑";
+            Check(pendingInput.IsEnabled && pendingInput.Text=="请求期间继续编辑",
+                "follow-up draft stays editable during a request");
+            pendingGate.SetResult();
+            await pendingRequest;
+            Check(pendingSend.IsEnabled,"follow-up send recovers after the request completes");
+        } finally { pendingWindow.Close(); }
+
+        var maxRequests=new List<IReadOnlyList<ChatMessage>>();
+        var maxResponses=new Queue<Func<Action<string>,Task>>();
+        maxResponses.Enqueue(append=> { append("x"); return Task.CompletedTask; });
+        maxResponses.Enqueue(append=> { append("y"); return Task.CompletedTask; });
+        var maxWindow=new ResultWindow(new Settings { Model="test-model" },
+            new PromptAction { Prompt="{{text}}" },new Selection(0,new string('a',ResultWindow.MaxConversationCharacters-4),false,null,null),
+            (_,messages,append,_,_)=> {
+                maxRequests.Add(messages.ToArray());
+                return maxResponses.Dequeue()(append);
+            });
+        try {
+            await maxWindow.Run();
+            FindNamed<Button>(maxWindow,"FollowUpButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var maxInput=FindNamed<TextBox>(maxWindow,"FollowUpInput");
+            var maxStatus=FindNamed<TextBlock>(maxWindow,"StatusText");
+            maxInput.Text="abc";
+            await maxWindow.SendFollowUp();
+            maxInput.Text="z";
+            await maxWindow.SendFollowUp();
+            Check(maxRequests.Count==2 && maxStatus.Text==UiText.T("ConversationTooLong") && maxInput.Text=="z",
+                "conversation history accepts the limit and preserves over-limit drafts");
+        } finally { maxWindow.Close(); }
 
         var focusTarget=new Window { Title="PopBar focus test",Width=300,Height=120 };
         var previewPrompt=new PromptAction { Name="预览" };
@@ -571,6 +740,41 @@ internal static class UiChecks
             if(!autoClosed) autoClosePreview.Close();
             manualClosePreview.Close();
             focusTarget.Close();
+        }
+
+        var closeResponses=new Queue<Func<Action<string>,Task>>();
+        closeResponses.Enqueue(append=> { append("初答"); return Task.CompletedTask; });
+        var conversationClose=new ResultWindow(new Settings { AutoCloseResultOnDeactivate=false },previewPrompt,previewSelection,
+            (_,_,append,_,_)=>closeResponses.Dequeue()(append));
+        var conversationFocus=new Window { Title="PopBar conversation focus test",Width=300,Height=120 };
+        var conversationClosed=false;
+        conversationClose.Closed+=(_,_)=>conversationClosed=true;
+        try {
+            WindowPresentation.ShowForeground(conversationClose);
+            VoidPump();
+            FindNamed<Button>(conversationClose,"FollowUpButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(FindNamed<Border>(conversationClose,"FollowUpComposer").Visibility==Visibility.Visible,
+                "follow-up mode reveals the composer before anything is sent");
+            var closeInput=FindNamed<TextBox>(conversationClose,"FollowUpInput");
+            conversationClose.UpdateLayout();
+            var caret=closeInput.GetRectFromCharacterIndex(0);
+            Check(closeInput.IsKeyboardFocusWithin &&
+                Math.Abs((caret.Top+caret.Bottom)/2-closeInput.ActualHeight/2)<=4,
+                "empty follow-up caret is vertically centered in a compact input");
+            WindowPresentation.ShowForeground(conversationFocus);
+            PumpFor(5200);
+            Check(!conversationClosed && conversationClose.IsVisible,
+                "entering follow-up mode disables auto-close before sending");
+            WindowPresentation.ShowForeground(conversationClose);
+            VoidPump();
+            conversationClose.SetAutoCloseOnDeactivate(true);
+            WindowPresentation.ShowForeground(conversationFocus);
+            PumpFor(5200);
+            Check(!conversationClosed && conversationClose.IsVisible,
+                "re-enabling auto-close does not affect follow-up mode");
+        } finally {
+            if(!conversationClosed) conversationClose.Close();
+            conversationFocus.Close();
         }
 
         app.Shutdown();

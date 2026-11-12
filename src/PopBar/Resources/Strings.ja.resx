@@ -13,7 +13,7 @@
     <value>＋ プロンプトを追加</value>
   </data>
   <data name="AiPrivacy" xml:space="preserve">
-    <value>AI ボタンを押したときだけ、選択したテキストを送信します。OpenAI 互換の Chat Completions API に対応しています。</value>
+    <value>AI ボタンを押したとき、または追加の質問を送信したときに選択テキストを送信します。追加の質問では、元の選択範囲と現在の結果ウィンドウ内の会話も再送信されます。OpenAI 互換の Chat Completions API に対応しています。</value>
   </data>
   <data name="AiResultWindow" xml:space="preserve">
     <value>AI 結果ウィンドウ</value>
@@ -86,6 +86,24 @@
   </data>
   <data name="Copy" xml:space="preserve">
     <value>コピー</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>AI</value>
+  </data>
+  <data name="ConversationTooLong" xml:space="preserve">
+    <value>会話が長すぎます。新しい AI 操作を開始してください。</value>
+  </data>
+  <data name="FollowUp" xml:space="preserve">
+    <value>追加質問</value>
+  </data>
+  <data name="FollowUpPrompt" xml:space="preserve">
+    <value>追加の質問や修正依頼を入力します。Enter で送信、Shift+Enter で改行します。</value>
+  </data>
+  <data name="SendFollowUp" xml:space="preserve">
+    <value>質問を送信</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>あなた</value>
   </data>
   <data name="Cut" xml:space="preserve">
     <value>切り取り</value>
@@ -422,6 +440,12 @@
   </data>
   <data name="ToolbarIconPreview" xml:space="preserve">
     <value>ツールバーでの表示プレビュー</value>
+  </data>
+  <data name="ToolbarOpacity" xml:space="preserve">
+    <value>ツールバーの待機時の不透明度</value>
+  </data>
+  <data name="ToolbarOpacityHelp" xml:space="preserve">
+    <value>ポインターを重ねる前のツールバーの透明度です。100% にすると完全に不透明になります。</value>
   </data>
   <data name="ToolbarPosition" xml:space="preserve">
     <value>ツールバーの表示位置</value>

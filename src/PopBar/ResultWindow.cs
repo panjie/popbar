@@ -6,25 +6,41 @@ using System.Windows.Threading;
 
 namespace PopBar;
 
+internal delegate Task ConversationStreamer(
+    Settings settings,
+    IReadOnlyList<ChatMessage> messages,
+    Action<string> append,
+    CancellationToken token,
+    Action? onThinking);
+
 internal sealed class ResultWindow:Window
 {
+    internal const int MaxConversationCharacters=262144;
     readonly MarkdownScrollViewer output=new();
-    readonly StringBuilder markdown=new();
+    readonly StringBuilder latestAnswer=new();
+    readonly List<ChatMessage> history=new();
     readonly TextBlock status=new() { FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis,VerticalAlignment=VerticalAlignment.Center };
     readonly TextBlock metadata;
-    readonly Button retry,stop,replace,copy;
+    readonly Button stop,replace,copy,send,followUpAction;
+    readonly TextBox followUp;
+    readonly Border composer;
+    readonly ConversationStreamer streamer;
     string? statusKey="PreparingRequest";
     string? preferredFont;
     readonly DispatcherTimer autoCloseTimer=new() { Interval=TimeSpan.FromSeconds(5) };
     bool autoCloseOnDeactivate;
+    bool followUpMode;
+    bool conversationStarted;
     CancellationTokenSource? pending;
-    readonly Settings settings; readonly PromptAction prompt; readonly Selection selection;
+    Settings settings; readonly PromptAction prompt; readonly Selection selection;
     long nextRender;
     int renderedLength;
     bool closed;
-    internal ResultWindow(Settings settings,PromptAction prompt,Selection selection)
+    internal ResultWindow(Settings settings,PromptAction prompt,Selection selection,ConversationStreamer? streamer=null)
     {
         this.settings=settings; this.prompt=prompt; this.selection=selection;
+        this.streamer=streamer??((requestSettings,messages,append,token,onThinking)=>
+            AiClient.Stream(requestSettings,messages,append,token,onThinking:onThinking));
         autoCloseOnDeactivate=settings.AutoCloseResultOnDeactivate;
         Width=560; Height=440; MinWidth=360; MinHeight=240;
         WindowStyle=WindowStyle.ToolWindow;
@@ -34,6 +50,7 @@ internal sealed class ResultWindow:Window
         var root=new Grid();
         root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height=new GridLength(1,GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
         Content=root;
 
@@ -53,12 +70,39 @@ internal sealed class ResultWindow:Window
         output.SetResourceReference(Control.BackgroundProperty,"WindowBackgroundBrush");
         Grid.SetRow(output,1); root.Children.Add(output);
 
+        composer=new Border {
+            Name="FollowUpComposer",Visibility=Visibility.Collapsed,
+            BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(16,7,10,7)
+        };
+        composer.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
+        Grid.SetRow(composer,2); root.Children.Add(composer);
+        var composerContent=new DockPanel { LastChildFill=true };
+        composer.Child=composerContent;
+        send=Ui.Button("",()=>_=SendFollowUp(),"PrimaryButtonStyle");
+        send.Name="SendFollowUpButton"; send.MinHeight=32; send.Padding=new Thickness(12,4,12,4);
+        send.Margin=new Thickness(8,0,0,0); send.VerticalAlignment=VerticalAlignment.Bottom;
+        DockPanel.SetDock(send,Dock.Right); composerContent.Children.Add(send);
+        followUp=Ui.Input("",true);
+        followUp.Name="FollowUpInput"; followUp.MinHeight=32; followUp.MaxHeight=96;
+        followUp.VerticalContentAlignment=VerticalAlignment.Center;
+        followUp.VerticalScrollBarVisibility=ScrollBarVisibility.Auto;
+        followUp.PreviewKeyDown+=(_,e)=> {
+            var modifiers=System.Windows.Input.Keyboard.Modifiers;
+            if(e.Key==System.Windows.Input.Key.Enter &&
+               (modifiers&System.Windows.Input.ModifierKeys.Shift)==0) {
+                e.Handled=true;
+                _=HandleFollowUpKeyAsync(e.Key,modifiers);
+            }
+        };
+        followUp.TextChanged+=(_,_)=>UpdateComposer();
+        composerContent.Children.Add(followUp);
+
         status.Name="StatusText";
         status.Margin=new Thickness(0,0,8,0);
         status.SetResourceReference(TextBlock.ForegroundProperty,"MutedTextBrush");
         status.SetBinding(FrameworkElement.ToolTipProperty,new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source=status });
         var footer=new Border { BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(16,5,10,5) };
-        Grid.SetRow(footer,2); root.Children.Add(footer);
+        Grid.SetRow(footer,3); root.Children.Add(footer);
         footer.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
         var footerContent=new DockPanel(); footer.Child=footerContent;
         var buttons=new StackPanel { Orientation=Orientation.Horizontal };
@@ -76,7 +120,7 @@ internal sealed class ResultWindow:Window
             return button;
         }
         stop=ActionButton("StopButton","",()=>pending?.Cancel(),"DangerButtonStyle");
-        retry=ActionButton("RetryButton","",()=>_=Run());
+        followUpAction=ActionButton("FollowUpButton","",StartFollowUp);
         copy=ActionButton("CopyResultButton","",()=> {
             SetStatus(Actions.Copy(PlainResult())?"Copied":"ClipboardBusy");
         });
@@ -91,14 +135,14 @@ internal sealed class ResultWindow:Window
             catch { SetStatus("ReplaceFailed"); }
         },"PrimaryButtonStyle");
         replace.IsEnabled=false;
-        replace.Visibility=stop.Visibility=Visibility.Collapsed;
+        replace.Visibility=stop.Visibility=followUpAction.Visibility=Visibility.Collapsed;
         RefreshLanguage();
 
         Activated+=(_,_)=>autoCloseTimer.Stop();
-        Deactivated+=(_,_)=> { if(autoCloseOnDeactivate && !closed) autoCloseTimer.Start(); };
+        Deactivated+=(_,_)=> { if(autoCloseOnDeactivate && !followUpMode && !closed) autoCloseTimer.Start(); };
         autoCloseTimer.Tick+=(_,_)=> {
             autoCloseTimer.Stop();
-            if(autoCloseOnDeactivate && !IsActive && !closed) Close();
+            if(autoCloseOnDeactivate && !followUpMode && !IsActive && !closed) Close();
         };
         Loaded+=async (_,_)=>await Run();
         Closed+=(_,_)=> {
@@ -117,10 +161,14 @@ internal sealed class ResultWindow:Window
         var selected=T("SelectedCharacterCount",selection.Text.Length);
         metadata.Text=string.IsNullOrWhiteSpace(settings.Model)?selected:$"{settings.Model}  ·  {selected}";
         stop.Content=T("Stop");
-        retry.Content=T("Retry");
+        followUpAction.Content=T("FollowUp");
         copy.Content=T("Copy");
         replace.Content=T("ReplaceOriginal");
+        send.Content=T("SendFollowUp");
+        followUp.ToolTip=T("FollowUpPrompt");
+        System.Windows.Automation.AutomationProperties.SetName(followUp,T("FollowUpPrompt"));
         if(statusKey!=null) status.Text=T(statusKey);
+        UpdateComposer();
     }
     // Read our own WPF selection directly; only the result body is eligible.
     internal Selection? ReadBodySelection(Native.Point point,bool focused=false)
@@ -155,6 +203,11 @@ internal sealed class ResultWindow:Window
         statusKey=key;
         status.Text=T(key);
     }
+    void ClearStatus()
+    {
+        statusKey=null;
+        status.Text="";
+    }
     internal void ApplyTypography(Settings preferences)
     {
         preferredFont=preferences.ResultFontFamily;
@@ -175,39 +228,91 @@ internal sealed class ResultWindow:Window
         output.Resources["ResultBodyFont"]=font;
         output.Resources["ResultCodeFont"]=ReferenceEquals(font,ResultTypography.DefaultFont)?ResultTypography.DefaultCodeFont:font;
     }
+    internal void ApplySettings(Settings preferences)
+    {
+        settings=preferences;
+        RefreshLanguage();
+    }
     internal void SetAutoCloseOnDeactivate(bool enabled)
     {
         if(autoCloseOnDeactivate==enabled || closed) return;
         autoCloseOnDeactivate=enabled;
-        if(enabled && IsVisible && !IsActive) autoCloseTimer.Start();
+        if(enabled && !followUpMode && IsVisible && !IsActive) autoCloseTimer.Start();
         else autoCloseTimer.Stop();
     }
-    async Task Run()
+    internal async Task Run()
     {
         if(pending!=null || closed) return;
+        history.Clear();
+        history.Add(new ChatMessage("user",AiClient.BuildPrompt(prompt.Prompt,selection.Text)));
+        latestAnswer.Clear();
+        conversationStarted=false;
+        await StreamCurrent();
+    }
+    void StartFollowUp()
+    {
+        if(pending!=null || closed || followUpMode) return;
+        followUpMode=true;
+        autoCloseTimer.Stop();
+        composer.Visibility=Visibility.Visible;
+        followUpAction.Visibility=Visibility.Collapsed;
+        followUp.Focus();
+    }
+    internal async Task SendFollowUp()
+    {
+        if(!followUpMode || pending!=null || closed || history.Count==0) return;
+        var question=followUp.Text;
+        if(string.IsNullOrWhiteSpace(question)) { UpdateComposer(); return; }
+        if(history.Sum(message=>message.Content.Length)+question.Length>MaxConversationCharacters) {
+            SetStatus("ConversationTooLong");
+            return;
+        }
+        history.Add(new ChatMessage("user",question));
+        latestAnswer.Clear();
+        followUp.Clear();
+        conversationStarted=true;
+        autoCloseTimer.Stop();
+        await StreamCurrent();
+    }
+    internal async Task<bool> HandleFollowUpKeyAsync(System.Windows.Input.Key key,System.Windows.Input.ModifierKeys modifiers)
+    {
+        if(key!=System.Windows.Input.Key.Enter ||
+           (modifiers&System.Windows.Input.ModifierKeys.Shift)!=0) return false;
+        await SendFollowUp();
+        return true;
+    }
+    async Task StreamCurrent()
+    {
+        if(pending!=null || closed || history.Count==0) return;
         using var request=new CancellationTokenSource();
         pending=request;
-        markdown.Clear(); renderedLength=0; nextRender=0; Display("");
-        retry.Visibility=replace.Visibility=Visibility.Collapsed;
+        renderedLength=0; nextRender=0;
+        DisplayTranscript();
+        followUpAction.Visibility=replace.Visibility=Visibility.Collapsed;
         stop.Visibility=Visibility.Visible;
+        UpdateComposer();
         SetStatus("WaitingForResponse");
         try {
-            await AiClient.Stream(settings,prompt,selection.Text,chunk=> {
+            await streamer(settings,history.ToArray(),chunk=> {
                 if(closed) return;
-                if(markdown.Length==0) SetStatus("StreamingResult");
+                if(latestAnswer.Length==0) SetStatus("StreamingResult");
                 Append(chunk);
             },request.Token,onThinking:()=> {
                 if(!closed) SetStatus("ModelThinking");
             });
             if(!closed) {
+                CommitAnswer();
                 Render(true);
-                SetStatus("RequestComplete");
+                ClearStatus();
                 replace.IsEnabled=selection.Editable;
                 replace.Visibility=selection.Editable?Visibility.Visible:Visibility.Collapsed;
             }
-        } catch(OperationCanceledException) { if(!closed) { Render(true); SetStatus("RequestStopped"); } }
+        } catch(OperationCanceledException) {
+            if(!closed) { CommitAnswer(); Render(true); SetStatus("RequestStopped"); }
+        }
         catch(Exception ex) {
             if(!closed) {
+                CommitAnswer();
                 Render(true);
                 if(ex is InvalidOperationException or InvalidDataException) {
                     statusKey=null;
@@ -218,25 +323,61 @@ internal sealed class ResultWindow:Window
         finally {
             pending=null;
             if(!closed) {
-                retry.Visibility=Visibility.Visible;
+                followUpAction.Visibility=followUpMode?Visibility.Collapsed:Visibility.Visible;
                 stop.Visibility=Visibility.Collapsed;
+                UpdateComposer();
+                if(followUpMode && IsActive) followUp.Focus();
             }
         }
     }
+    void CommitAnswer()
+    {
+        var answer=latestAnswer.ToString();
+        if(answer.Length==0) return;
+        if(history.Count>0 && history[^1].Role=="assistant")
+            history[^1]=new ChatMessage("assistant",answer);
+        else history.Add(new ChatMessage("assistant",answer));
+    }
+    void UpdateComposer() =>
+        send.IsEnabled=pending==null && history.Count>0 && !string.IsNullOrWhiteSpace(followUp.Text);
     internal void Append(string chunk)
     {
-        markdown.Append(chunk); Render();
+        latestAnswer.Append(chunk); Render();
     }
     internal string PlainResult()
     {
-        if(!closed && markdown.Length!=renderedLength) Display(markdown.ToString());
-        return MarkdownText.Plain(output.Document);
+        if(latestAnswer.Length==0) return "";
+        var source=MarkdownText.DemoteImages(latestAnswer.ToString());
+        try {
+            var viewer=new MarkdownScrollViewer { MarkdownStyle=output.MarkdownStyle };
+            viewer.Markdown=source;
+            NormalizeCodeBlocks(viewer.Document!);
+            return MarkdownText.Plain(viewer.Document);
+        } catch { return latestAnswer.ToString(); }
     }
+    string Transcript()
+    {
+        if(history.Count==0) return latestAnswer.ToString();
+        var turns=history.Skip(1).ToList();
+        if(latestAnswer.Length>0 && turns.Count>0 && turns[^1].Role=="assistant")
+            turns.RemoveAt(turns.Count-1);
+        var source=new StringBuilder();
+        foreach(var message in turns)
+            source.Append(message.Role=="user"
+                ?MarkdownText.FormatUserTurn(T("You"),message.Content)
+                :MarkdownText.FormatAssistantTurn(T("Assistant"),message.Content));
+        if(latestAnswer.Length>0)
+            source.Append(history.Count<=1 || !conversationStarted
+                ?latestAnswer.ToString()
+                :MarkdownText.FormatAssistantTurn(T("Assistant"),latestAnswer.ToString()));
+        return source.ToString();
+    }
+    void DisplayTranscript() => Display(Transcript());
     void Render(bool force=false)
     {
         if(closed) return;
         if(!force && Environment.TickCount64<nextRender) return;
-        var source=markdown.ToString();
+        var source=Transcript();
         if(source.Length==renderedLength) return;
         var started=Environment.TickCount64;
         Display(source);
@@ -245,7 +386,7 @@ internal sealed class ResultWindow:Window
     }
     internal void RenderMarkdown(string source)
     {
-        markdown.Clear(); markdown.Append(source); nextRender=0;
+        history.Clear(); latestAnswer.Clear().Append(source); nextRender=0;
         Display(source);
     }
     void Display(string source)

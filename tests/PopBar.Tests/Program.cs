@@ -31,6 +31,15 @@ Check(Actions.Link("https://user:password@example.com")==null,"URL credentials r
 Check(Actions.Link("some words example.com")==null,"phrase remains search");
 Check(MarkdownText.DemoteImages("![追踪](https://example.com/a.png)")=="[追踪](https://example.com/a.png)","markdown images become links");
 Check(MarkdownText.DemoteImages("普通文字")=="普通文字","markdown without images unchanged");
+var userTurn=MarkdownText.FormatUserTurn("你","# 标题\n**粗体** <b>x</b> ![图](https://example.com/a.png)");
+Check(userTurn.StartsWith("### 你\n\n> ") && userTurn.Contains(@"\# 标题") &&
+    userTurn.Contains(@"\*\*粗体\*\*") && userTurn.Contains("&lt;b&gt;x&lt;/b&gt;") &&
+    !userTurn.Contains("\n# 标题") && !userTurn.Contains("![图]"),
+    "follow-up questions are escaped to plain text");
+Check(MarkdownText.FormatAssistantTurn("AI","```cs\nvar x = 1;")=="### AI\n\n```cs\nvar x = 1;\n```\n\n",
+    "unclosed assistant code fence is closed for display");
+Check(MarkdownText.FormatAssistantTurn("AI","~~~\nx\n~~~")=="### AI\n\n~~~\nx\n~~~\n\n",
+    "closed assistant code fence is left unchanged");
 Check(AiClient.Endpoint("http://127.0.0.1:1234/v1").AbsoluteUri=="http://127.0.0.1:1234/v1/chat/completions","local endpoint");
 await Throws(()=>Task.FromResult(AiClient.Endpoint("http://example.com/v1")),"remote plaintext rejected");
 await Throws(()=>Task.FromResult(AiClient.Endpoint("https://example.com/v1?key=x")),"query credentials rejected");
@@ -56,6 +65,11 @@ try {
         "disabling login startup removes only PopBar's registration");
 } finally { Microsoft.Win32.Registry.CurrentUser.DeleteSubKey(startupTestKey,throwOnMissingSubKey:false); }
 Check(JsonSerializer.Deserialize<Settings>("{}")!.ToolbarPosition==ToolbarPlacement.Above,"legacy toolbar stays above");
+Check(JsonSerializer.Deserialize<Settings>("{}")!.ToolbarIdleOpacity==35,"toolbar idle opacity defaults for existing settings");
+Check(JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(new Settings { ToolbarIdleOpacity=65 }))!.ToolbarIdleOpacity==65,
+    "toolbar idle opacity persists");
+Check(ToolbarWindow.NormalizeIdleOpacity(0)==10 && ToolbarWindow.NormalizeIdleOpacity(150)==100,
+    "toolbar idle opacity is bounded");
 Check(JsonSerializer.Deserialize<Settings>("{}")!.AutoCloseResultOnDeactivate,"result auto-close defaults on for existing settings");
 var manualCloseSettings=JsonSerializer.Serialize(new Settings { AutoCloseResultOnDeactivate=false });
 Check(!JsonSerializer.Deserialize<Settings>(manualCloseSettings)!.AutoCloseResultOnDeactivate,"disabled result auto-close survives saving and reloading");
@@ -93,7 +107,14 @@ var handler=new FakeHandler(sse,"https://example.com/v1/chat/completions");
 settings.BaseUrl="https://example.com/v1"; settings.Model="deepseek-flash";
 var testPrompt=new PromptAction { Prompt="Translate {{text}}" };
 result.Clear(); await AiClient.Stream(settings,testPrompt,"你好",x=>result.Append(x),default,handler);
-Check(result.ToString()=="你好 world"&&handler.Valid&&handler.ThinkingMode==null,"compatible endpoint streams without DeepSeek-only fields");
+Check(result.ToString()=="你好 world"&&handler.Valid&&handler.ThinkingMode==null &&
+    handler.Messages.SequenceEqual(new[]{new ChatMessage("user","Translate 你好")}),
+    "compatible endpoint streams without DeepSeek-only fields");
+var historyHandler=new FakeHandler(sse,"https://example.com/v1/chat/completions");
+var history=new[]{new ChatMessage("user","初问"),new ChatMessage("assistant","初答"),new ChatMessage("user","请修正")};
+result.Clear(); await AiClient.Stream(settings,history,x=>result.Append(x),default,historyHandler);
+Check(result.ToString()=="你好 world" && historyHandler.Valid &&
+    historyHandler.Messages.SequenceEqual(history),"multi-message request preserves conversation roles and order");
 settings.BaseUrl="https://api.deepseek.com/v1";
 foreach(var enabled in new[]{false,true}) {
     settings.DeepSeekFlashThinking=enabled;
@@ -108,10 +129,15 @@ sealed class FakeHandler(string sse,string endpoint):HttpMessageHandler
 {
     public bool Valid;
     public string? ThinkingMode;
+    public List<ChatMessage> Messages { get; } = new();
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken token)
     {
         using var body=JsonDocument.Parse(await r.Content!.ReadAsStringAsync(token));
-        Valid=r.RequestUri!.AbsoluteUri==endpoint && r.Headers.Authorization?.Parameter=="test-key-not-real" && body.RootElement.GetProperty("messages")[0].GetProperty("content").GetString()=="Translate 你好" && body.RootElement.GetProperty("stream").GetBoolean();
+        Messages.Clear();
+        foreach(var message in body.RootElement.GetProperty("messages").EnumerateArray())
+            Messages.Add(new ChatMessage(message.GetProperty("role").GetString()!,message.GetProperty("content").GetString()!));
+        Valid=r.RequestUri!.AbsoluteUri==endpoint && r.Headers.Authorization?.Parameter=="test-key-not-real" &&
+            Messages.Count>0 && body.RootElement.GetProperty("stream").GetBoolean();
         if(body.RootElement.TryGetProperty("thinking",out var thinking)) ThinkingMode=thinking.GetProperty("type").GetString();
         return new(HttpStatusCode.OK) { Content=new StringContent(sse,Encoding.UTF8,"text/event-stream") };
     }

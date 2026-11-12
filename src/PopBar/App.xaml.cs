@@ -143,6 +143,7 @@ public partial class App:Application
             LocalizeBuiltInPromptNames();
             ThemeManager.Apply(next.Theme);
             resultWindow?.SetAutoCloseOnDeactivate(next.AutoCloseResultOnDeactivate);
+            resultWindow?.ApplySettings(next);
             resultWindow?.ApplyTypography(next);
         });
         settingsWindow.Closed+=(_,_)=>settingsWindow=null;

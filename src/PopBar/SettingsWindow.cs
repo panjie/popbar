@@ -129,6 +129,18 @@ internal sealed class SettingsWindow:Window
         }
         general.Children.Add(theme);
         var themeHelp=Text(T("ThemeHelp"),12,true); themeHelp.Margin=new Thickness(0,6,0,0); general.Children.Add(themeHelp);
+        var opacityLabel=FieldLabel(general,T("ToolbarOpacity"));
+        var toolbarOpacity=new ComboBox { Name="ToolbarOpacitySelector" };
+        toolbarOpacity.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(toolbarOpacity,opacityLabel);
+        var opacityOptions=Enumerable.Range(2,19).Select(step=>step*5).ToList();
+        foreach(var percent in opacityOptions)
+            toolbarOpacity.Items.Add(new ComboBoxItem { Content=$"{percent}%",Tag=percent });
+        var savedOpacity=ToolbarWindow.NormalizeIdleOpacity(settings.ToolbarIdleOpacity);
+        var nearestOpacity=opacityOptions.MinBy(percent=>Math.Abs(percent-savedOpacity));
+        toolbarOpacity.SelectedItem=toolbarOpacity.Items.Cast<ComboBoxItem>().First(item=>Equals(item.Tag,nearestOpacity));
+        general.Children.Add(toolbarOpacity);
+        var opacityHelp=Text(T("ToolbarOpacityHelp"),12,true); opacityHelp.Margin=new Thickness(0,6,0,0); general.Children.Add(opacityHelp);
 
         Section(general,T("SelectionBehavior"));
         FieldLabel(general,T("ToolbarPosition"));
@@ -371,7 +383,8 @@ internal sealed class SettingsWindow:Window
                 if(drafts.Any(x=>string.IsNullOrWhiteSpace(x.Name)||string.IsNullOrWhiteSpace(x.Prompt))) throw new InvalidOperationException(T("PromptRequired"));
                 if(drafts.Any(x=>PromptIcons.Glyph(x).Length==0)) throw new InvalidOperationException(T("IconRequired"));
                 var selectedTheme=(theme.SelectedItem as ComboBoxItem)?.Tag is AppTheme value?value:AppTheme.System;
-                var next=new Settings { Theme=selectedTheme,ToolbarPosition=toolbarPosition.SelectedIndex==1?ToolbarPlacement.Below:ToolbarPlacement.Above,Enabled=enabled.IsChecked==true,TerminalShift=terminal.IsChecked==true,SearchUrl=search.Text.Trim(),ExcludedApps=excluded.Text,BaseUrl=url.Text.Trim(),Model=model.Text.Trim(),EncryptedKey=settings.EncryptedKey,Prompts=drafts.Select(x=> { var copy=x.Copy(); copy.Name=copy.Name.Trim(); return copy; }).ToList() };
+                var selectedOpacity=(toolbarOpacity.SelectedItem as ComboBoxItem)?.Tag is int percent?percent:ToolbarWindow.DefaultIdleOpacityPercent;
+                var next=new Settings { Theme=selectedTheme,ToolbarPosition=toolbarPosition.SelectedIndex==1?ToolbarPlacement.Below:ToolbarPlacement.Above,ToolbarIdleOpacity=selectedOpacity,Enabled=enabled.IsChecked==true,TerminalShift=terminal.IsChecked==true,SearchUrl=search.Text.Trim(),ExcludedApps=excluded.Text,BaseUrl=url.Text.Trim(),Model=model.Text.Trim(),EncryptedKey=settings.EncryptedKey,Prompts=drafts.Select(x=> { var copy=x.Copy(); copy.Name=copy.Name.Trim(); return copy; }).ToList() };
                 next.Language=language.SelectedValue is UiLanguage preference?preference:UiLanguage.System;
                 next.AutoCloseResultOnDeactivate=autoCloseResult.IsChecked==true;
                 next.ResultFontFamily=resultFont.SelectedValue as string??"";

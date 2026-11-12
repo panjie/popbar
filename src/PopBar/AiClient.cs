@@ -5,6 +5,8 @@ using System.Text.Json;
 
 namespace PopBar;
 
+internal sealed record ChatMessage(string Role,string Content);
+
 public static class AiClient
 {
     public static Uri Endpoint(string baseUrl)
@@ -22,7 +24,10 @@ public static class AiClient
         uri.IsDefaultPort && uri.Host=="api.deepseek.com" && uri.UserInfo.Length==0 &&
         uri.Query.Length==0 && uri.Fragment.Length==0 && (uri.AbsolutePath.TrimEnd('/') is "" or "/v1");
 
-    public static async Task Stream(Settings settings,PromptAction action,string text,Action<string> append,CancellationToken token,HttpMessageHandler? handler=null,Action? onThinking=null)
+    public static Task Stream(Settings settings,PromptAction action,string text,Action<string> append,CancellationToken token,HttpMessageHandler? handler=null,Action? onThinking=null) =>
+        Stream(settings,new[]{new ChatMessage("user",BuildPrompt(action.Prompt,text))},append,token,handler,onThinking);
+
+    internal static async Task Stream(Settings settings,IReadOnlyList<ChatMessage> messages,Action<string> append,CancellationToken token,HttpMessageHandler? handler=null,Action? onThinking=null)
     {
         if(string.IsNullOrWhiteSpace(settings.Model)) throw new InvalidOperationException(T("ModelRequired"));
         using var client=new HttpClient(handler??new HttpClientHandler { AllowAutoRedirect=false }) { Timeout=Timeout.InfiniteTimeSpan };
@@ -34,7 +39,7 @@ public static class AiClient
         var payload=new Dictionary<string,object> {
             ["model"]=settings.Model.Trim(),
             ["stream"]=true,
-            ["messages"]=new[]{new { role="user",content=BuildPrompt(action.Prompt,text) }}
+            ["messages"]=messages.Select(message=>new { role=message.Role,content=message.Content }).ToArray()
         };
         if(IsOfficialDeepSeekFlash(settings.BaseUrl,settings.Model))
             payload["thinking"]=new { type=settings.DeepSeekFlashThinking?"enabled":"disabled" };

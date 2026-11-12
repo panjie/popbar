@@ -45,6 +45,7 @@ public sealed class Settings
     public AppTheme Theme { get; set; } = AppTheme.System;
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ToolbarPlacement ToolbarPosition { get; set; } = ToolbarPlacement.Above;
+    public int ToolbarIdleOpacity { get; set; } = 35;
     public bool Enabled { get; set; } = true;
     public bool TerminalShift { get; set; } = true;
     public bool AutoCloseResultOnDeactivate { get; set; } = true;

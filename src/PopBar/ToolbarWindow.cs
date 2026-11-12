@@ -5,9 +5,14 @@ namespace PopBar;
 
 internal sealed class ToolbarWindow:Window
 {
-    internal const double IdleOpacity=0.35;
+    internal const int DefaultIdleOpacityPercent=35;
+    internal const int MinIdleOpacityPercent=10;
+    internal const int MaxIdleOpacityPercent=100;
+    internal const double DefaultIdleOpacity=DefaultIdleOpacityPercent/100.0;
     readonly Border surface;
     readonly WrapPanel buttons=new();
+    double idleOpacity=DefaultIdleOpacity;
+    internal double IdleOpacity => idleOpacity;
     internal nint Handle => new WindowInteropHelper(this).Handle;
     protected override void OnSourceInitialized(EventArgs e)
     {
@@ -23,7 +28,7 @@ internal sealed class ToolbarWindow:Window
         ShowInTaskbar=false; ShowActivated=false; Topmost=true; SizeToContent=SizeToContent.WidthAndHeight;
         AllowsTransparency=true; Background=Brushes.Transparent; Ui.Style(this); Background=Brushes.Transparent;
         surface=new Border { CornerRadius=new CornerRadius(8),BorderThickness=new Thickness(1),Padding=new Thickness(3),Margin=new Thickness(6),Child=buttons,Effect=new System.Windows.Media.Effects.DropShadowEffect { BlurRadius=12,ShadowDepth=2,Opacity=0.25,Direction=270,Color=Colors.Black } };
-        surface.Name="ToolbarSurface"; surface.Opacity=IdleOpacity;
+        surface.Name="ToolbarSurface"; surface.Opacity=DefaultIdleOpacity;
         surface.MouseEnter+=(_,_)=>Fade(1);
         surface.MouseLeave+=(_,_)=>Fade(IdleOpacity);
         surface.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush");
@@ -39,8 +44,11 @@ internal sealed class ToolbarWindow:Window
     {
         surface.BeginAnimation(UIElement.OpacityProperty,new DoubleAnimation(target,TimeSpan.FromMilliseconds(120)) { EasingFunction=new QuadraticEase { EasingMode=EasingMode.EaseOut } });
     }
+    internal static int NormalizeIdleOpacity(int percent) =>
+        Math.Clamp(percent,MinIdleOpacityPercent,MaxIdleOpacityPercent);
     internal void Present(Selection selection,Native.Point point,Settings settings,Action configure,Action<PromptAction> ai,Action<string> notify)
     {
+        idleOpacity=NormalizeIdleOpacity(settings.ToolbarIdleOpacity)/100.0;
         surface.BeginAnimation(UIElement.OpacityProperty,null); surface.Opacity=IdleOpacity;
         buttons.Children.Clear();
         void Separator() {

@@ -84,3 +84,7 @@ Expected: `artifacts/ui/toolbar-*.png` 显示半透明工具条。
 Run: `dotnet build src/PopBar -c Release`
 Run: `./scripts/publish.ps1`
 Expected: 构建、单文件发布通过。
+
+## 后续修订（2026-11-12）
+
+空闲透明度改为设置项 `ToolbarIdleOpacity`（10%–100%，默认 35%，5% 步进）；设置界面位于“常规 → 外观”。工具条每次出现时读取配置，悬停仍为 100%。

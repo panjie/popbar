@@ -13,7 +13,7 @@
     <value>＋ Add prompt</value>
   </data>
   <data name="AiPrivacy" xml:space="preserve">
-    <value>Selected text is sent only when you click an AI action. Supports OpenAI-compatible Chat Completions.</value>
+    <value>Selected text is sent when you click an AI action or send a follow-up. Follow-ups resend the original selection and the conversation in the current result window. Supports OpenAI-compatible Chat Completions.</value>
   </data>
   <data name="AiResultWindow" xml:space="preserve">
     <value>AI result window</value>
@@ -86,6 +86,24 @@
   </data>
   <data name="Copy" xml:space="preserve">
     <value>Copy</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>AI</value>
+  </data>
+  <data name="ConversationTooLong" xml:space="preserve">
+    <value>This conversation is too long. Start a new AI action.</value>
+  </data>
+  <data name="FollowUp" xml:space="preserve">
+    <value>Follow up</value>
+  </data>
+  <data name="FollowUpPrompt" xml:space="preserve">
+    <value>Ask a follow-up or request a correction. Enter sends; Shift+Enter adds a line.</value>
+  </data>
+  <data name="SendFollowUp" xml:space="preserve">
+    <value>Send follow-up</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>You</value>
   </data>
   <data name="Cut" xml:space="preserve">
     <value>Cut</value>
@@ -422,6 +440,12 @@ Click Add prompt to get started.</value>
   </data>
   <data name="ToolbarIconPreview" xml:space="preserve">
     <value>Preview of the toolbar icon</value>
+  </data>
+  <data name="ToolbarOpacity" xml:space="preserve">
+    <value>Toolbar idle opacity</value>
+  </data>
+  <data name="ToolbarOpacityHelp" xml:space="preserve">
+    <value>Opacity before the pointer moves over the toolbar. Choose 100% to keep it fully opaque.</value>
   </data>
   <data name="ToolbarPosition" xml:space="preserve">
     <value>Toolbar position</value>
