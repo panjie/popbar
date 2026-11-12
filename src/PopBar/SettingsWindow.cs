@@ -279,20 +279,21 @@ internal sealed class SettingsWindow:Window
         model.TextChanged+=(_,_)=>UpdateThinkingOption();
         UpdateThinkingOption();
         Section(ai,T("Authentication"));
-        FieldLabel(ai,T("ApiKey"));
-        var secretHost=new Grid(); ai.Children.Add(secretHost);
-        var secret=new PasswordBox { Name="ApiKeyInput" }; secret.SetResourceReference(FrameworkElement.StyleProperty,"InputPasswordBoxStyle"); secretHost.Children.Add(secret);
-        // Display a status overlay, never a fake password that could be saved as a key.
-        var savedKeyMask=Text("●●●●●●●●",12,true); savedKeyMask.Name="SavedApiKeyMask";
-        savedKeyMask.Margin=new Thickness(11,0,0,0); savedKeyMask.VerticalAlignment=VerticalAlignment.Center; savedKeyMask.IsHitTestVisible=false;
-        secretHost.Children.Add(savedKeyMask);
-        var secretHelp=Text(T("ApiKeyHelp"),12,true); secretHelp.Margin=new Thickness(0,6,0,0); ai.Children.Add(secretHelp);
-        var clear=new CheckBox { Name="ClearSavedApiKey",Content=T("ClearSavedApiKey"),Margin=new Thickness(0,10,0,0) }; ai.Children.Add(clear);
-        void UpdateKeyMask()=>savedKeyMask.Visibility=!string.IsNullOrEmpty(settings.EncryptedKey) && clear.IsChecked!=true && secret.Password.Length==0?Visibility.Visible:Visibility.Collapsed;
-        secret.PasswordChanged+=(_,_)=>UpdateKeyMask();
-        clear.Checked+=(_,_)=>UpdateKeyMask(); clear.Unchecked+=(_,_)=>UpdateKeyMask();
-        UpdateKeyMask();
-        var privacy=Text(T("AiPrivacy"),12,true); privacy.Margin=new Thickness(0,22,0,4); ai.Children.Add(privacy);
+        var keyLabel=FieldLabel(ai,T("ApiKey"));
+        var secret=new PasswordBox { Name="ApiKeyInput" };
+        secret.SetResourceReference(FrameworkElement.StyleProperty,"InputPasswordBoxStyle");
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(secret,keyLabel);
+        var saveKey=false;
+        var keyHelp=T("ApiKeyHelp");
+        try { secret.Password=settings.GetKey(); }
+        catch(Exception ex) when(ex is FormatException or System.Security.Cryptography.CryptographicException) {
+            saveKey=true;
+            keyHelp=T("ApiKeyUnavailable");
+        }
+        secret.PasswordChanged+=(_,_)=>saveKey=true;
+        ai.Children.Add(secret);
+        System.Windows.Automation.AutomationProperties.SetHelpText(secret,keyHelp);
+        var secretHelp=Text(keyHelp,12,true); secretHelp.Margin=new Thickness(0,6,0,0); ai.Children.Add(secretHelp);
 
         var promptRows=new Grid();
         promptRows.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
@@ -418,8 +419,10 @@ internal sealed class SettingsWindow:Window
         footer.SetResourceReference(Border.BackgroundProperty,"SurfaceBrush");
         footer.SetResourceReference(Border.BorderBrushProperty,"BorderBrush");
         var footerButtons=new StackPanel { Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right }; footer.Child=footerButtons;
-        footerButtons.Children.Add(Ui.Button(T("Cancel"),Close));
-        footerButtons.Children.Add(Ui.Button(T("Save"),()=>{
+        var cancel=Ui.Button(T("Cancel"),Close);
+        cancel.Name="CancelSettingsButton";
+        footerButtons.Children.Add(cancel);
+        var save=Ui.Button(T("Save"),()=>{
             try {
                 AiClient.Endpoint(url.Text);
                 Actions.SearchUri(search.Text,"test");
@@ -441,9 +444,8 @@ internal sealed class SettingsWindow:Window
                     next.AiSmartPrompt=customSmartPrompt;
                 next.CurrencyTarget=currencyTarget.SelectedItem as string??"CNY";
                 next.CurrencySource=currencySource.SelectedItem as string??"CNY";
-                if(clear.IsChecked==true) next.SetKey("");
-                if(secret.Password.Length>0) next.SetKey(secret.Password);
-                next.Save(); saved(next);
+                if(saveKey) next.SetKey(secret.Password);
+                saved(next);
                 var startupEnabled=launchAtLogin.IsChecked==true;
                 if(launchAtLogin.IsEnabled && startupEnabled!=startupWasEnabled) {
                     try { startupRegistration.SetEnabled(startupEnabled,Environment.ProcessPath); }
@@ -453,7 +455,9 @@ internal sealed class SettingsWindow:Window
                 }
                 Close();
             } catch(Exception ex) { MessageBox.Show(this,ex.Message,T("SettingsSaveFailedTitle"),MessageBoxButton.OK,MessageBoxImage.Warning); }
-        },"PrimaryButtonStyle"));
+        },"PrimaryButtonStyle");
+        save.Name="SaveSettingsButton";
+        footerButtons.Children.Add(save);
         ShowPage(generalPage);
     }
 }

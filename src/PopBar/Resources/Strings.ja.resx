@@ -12,9 +12,6 @@
   <data name="AddPrompt" xml:space="preserve">
     <value>＋ プロンプトを追加</value>
   </data>
-  <data name="AiPrivacy" xml:space="preserve">
-    <value>AI ボタンを押したとき、または追加の質問を送信したときに選択テキストを送信します。追加の質問では、元の選択範囲と現在の結果ウィンドウ内の会話も再送信されます。OpenAI 互換の Chat Completions API に対応しています。</value>
-  </data>
   <data name="AiResultWindow" xml:space="preserve">
     <value>AI 結果ウィンドウ</value>
   </data>
@@ -22,7 +19,7 @@
     <value>AI サービス</value>
   </data>
   <data name="AiServiceDescription" xml:space="preserve">
-    <value>OpenAI 互換の Chat Completions API に接続します。</value>
+    <value>OpenAI 互換の Chat Completions API に対応しています。</value>
   </data>
   <data name="AlreadyRunning" xml:space="preserve">
     <value>PopBar はすでに実行中です。通知領域から設定を開いてください。</value>
@@ -37,7 +34,10 @@
     <value>API キー</value>
   </data>
   <data name="ApiKeyHelp" xml:space="preserve">
-    <value>空欄のままにすると保存済みのキーを使用します。キーは Windows DPAPI で現在のユーザー用に暗号化されます。</value>
+    <value>保存済みのキーを削除するには、この欄を空にして保存します。</value>
+  </data>
+  <data name="ApiKeyUnavailable" xml:space="preserve">
+    <value>保存済みのキーを読み込めませんでした。キーを入力し直すか、空欄のまま保存して削除してください。</value>
   </data>
   <data name="AppStartupFailed" xml:space="preserve">
     <value>PopBar を起動できませんでした</value>
@@ -74,9 +74,6 @@
   </data>
   <data name="ChooseIcon" xml:space="preserve">
     <value>アイコンを選択…</value>
-  </data>
-  <data name="ClearSavedApiKey" xml:space="preserve">
-    <value>保存済みのキーを削除する（キー不要のローカルサービス向け）</value>
   </data>
   <data name="ClipboardBusy" xml:space="preserve">
     <value>クリップボードを使用できません。もう一度お試しください。</value>

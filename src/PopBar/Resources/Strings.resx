@@ -12,9 +12,6 @@
   <data name="AddPrompt" xml:space="preserve">
     <value>＋ Add prompt</value>
   </data>
-  <data name="AiPrivacy" xml:space="preserve">
-    <value>Selected text is sent when you click an AI action or send a follow-up. Follow-ups resend the original selection and the conversation in the current result window. Supports OpenAI-compatible Chat Completions.</value>
-  </data>
   <data name="AiResultWindow" xml:space="preserve">
     <value>AI result window</value>
   </data>
@@ -22,7 +19,7 @@
     <value>AI Service</value>
   </data>
   <data name="AiServiceDescription" xml:space="preserve">
-    <value>Connect to an OpenAI-compatible Chat Completions API.</value>
+    <value>Supports OpenAI-compatible Chat Completions APIs.</value>
   </data>
   <data name="AlreadyRunning" xml:space="preserve">
     <value>PopBar is already running. Open Settings from the system tray.</value>
@@ -37,7 +34,10 @@
     <value>API key</value>
   </data>
   <data name="ApiKeyHelp" xml:space="preserve">
-    <value>Leave blank to keep the saved key. Windows DPAPI encrypts it for your account.</value>
+    <value>Clear this field and save to remove the saved key.</value>
+  </data>
+  <data name="ApiKeyUnavailable" xml:space="preserve">
+    <value>The saved key could not be read. Enter the key again, or leave this field empty and save to remove it.</value>
   </data>
   <data name="AppStartupFailed" xml:space="preserve">
     <value>Couldn't start PopBar</value>
@@ -74,9 +74,6 @@
   </data>
   <data name="ChooseIcon" xml:space="preserve">
     <value>Choose icon…</value>
-  </data>
-  <data name="ClearSavedApiKey" xml:space="preserve">
-    <value>Clear the saved key for local services that don't need one</value>
   </data>
   <data name="ClipboardBusy" xml:space="preserve">
     <value>The clipboard is busy. Try again.</value>

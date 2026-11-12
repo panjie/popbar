@@ -2,6 +2,7 @@ using PopBar;
 using System.IO;
 using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -446,6 +447,38 @@ internal static class UiChecks
             }
         } finally { languagePreview.Close(); UiText.Apply(UiLanguage.Chinese); }
 
+        Settings? EditApiKey(Settings original,Action<PasswordBox> edit,bool save=true)
+        {
+            Settings? saved=null;
+            var window=new SettingsWindow(original,next=>saved=next);
+            var closed=false;
+            window.Closed+=(_,_)=>closed=true;
+            try {
+                var input=FindNamed<PasswordBox>(window,"ApiKeyInput");
+                edit(input);
+                FindNamed<Button>(window,save?"SaveSettingsButton":"CancelSettingsButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                return saved;
+            } finally { if(!closed) window.Close(); }
+        }
+        var keySettings=new Settings();
+        keySettings.SetKey("test-settings-key");
+        var keptKey=EditApiKey(keySettings,input=>Check(input.Password=="test-settings-key" &&
+            new PasswordBoxAutomationPeer(input).IsPassword(),"saved key is loaded into the masked password box"));
+        Check(keptKey?.EncryptedKey==keySettings.EncryptedKey,"saving without editing retains the encrypted key");
+        var clearedKey=EditApiKey(keySettings,input=>input.Clear());
+        Check(clearedKey?.EncryptedKey=="","clearing the input and saving removes the key");
+        var replacedKey=EditApiKey(keySettings,input=>input.Password="replacement-key");
+        Check(replacedKey?.GetKey()=="replacement-key","editing the input and saving replaces the key");
+        Check(EditApiKey(keySettings,input=>input.Clear(),save:false)==null && keySettings.GetKey()=="test-settings-key",
+            "cancel discards key deletion");
+        var unreadableKey=new Settings { EncryptedKey="invalid-base64" };
+        var recoveredKey=EditApiKey(unreadableKey,input=> {
+            Check(input.Password.Length==0 && AutomationProperties.GetHelpText(input)==UiText.T("ApiKeyUnavailable"),
+                "an unreadable saved key leaves settings accessible and explains recovery");
+            input.Password="recovered-key";
+        });
+        Check(recoveredKey?.GetKey()=="recovered-key","an unreadable key can be replaced");
+
         var selectionBox=new TextBox { Text="Hello selection" };
         var origin=new Window { Title="PopBar activation test source",Width=320,Height=160,Content=selectionBox };
         var foregroundResult=new Window { Title="PopBar activation test result",Width=320,Height=160,Content=new TextBlock { Text="Result preview" } };
@@ -493,18 +526,6 @@ internal static class UiChecks
             var promptsPage=FindNamed<FrameworkElement>(settingsWindow,"PromptsPage");
             void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Click(aiNav);
-            var keyInput=FindNamed<PasswordBox>(settingsWindow,"ApiKeyInput");
-            var keyMask=FindNamed<TextBlock>(settingsWindow,"SavedApiKeyMask");
-            var clearKey=FindNamed<CheckBox>(settingsWindow,"ClearSavedApiKey");
-            Check(keyMask.Visibility==Visibility.Visible && keyInput.Password.Length==0,"saved key displays mask without populating password");
-            keyInput.Password="replacement";
-            Check(keyMask.Visibility==Visibility.Collapsed,"replacement key hides saved mask");
-            keyInput.Clear();
-            Check(keyMask.Visibility==Visibility.Visible,"empty replacement retains saved key indicator");
-            clearKey.IsChecked=true;
-            Check(keyMask.Visibility==Visibility.Collapsed,"clearing saved key hides mask");
-            clearKey.IsChecked=false;
-            Check(keyMask.Visibility==Visibility.Visible && sourceSettings.GetKey()=="test-settings-key","cancel clearing restores mask without changing stored key");
             Check(aiPage.Visibility==Visibility.Visible && generalPage.Visibility!=Visibility.Visible && promptsPage.Visibility!=Visibility.Visible,"settings AI navigation");
             Click(promptsNav);
             Check(promptsPage.Visibility==Visibility.Visible && generalPage.Visibility!=Visibility.Visible && aiPage.Visibility!=Visibility.Visible,"settings prompts navigation");

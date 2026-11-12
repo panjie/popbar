@@ -146,6 +146,7 @@ public partial class App:Application
         if(settingsWindow!=null) { settingsWindow.Activate(); return; }
         ApplyLanguage();
         settingsWindow=new(settings,next=> {
+            next.Save();
             settings=next;
             ApplyLanguage();
             LocalizeBuiltInPromptNames();
