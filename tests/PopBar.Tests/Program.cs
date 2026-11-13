@@ -162,6 +162,83 @@ foreach(var enabled in new[]{false,true}) {
     await AiClient.Stream(settings,testPrompt,"你好",_=>{},default,officialHandler);
     Check(officialHandler.Valid && officialHandler.ThinkingMode==(enabled?"enabled":"disabled"),$"official DeepSeek Flash thinking toggle ({enabled})");
 }
+var legacyAi=JsonSerializer.Deserialize<Settings>("""{"BaseUrl":"https://example.com/v1","Model":"local-model"}""")!;
+Check(legacyAi.AiProvider==AiProvider.ChatCompletions && legacyAi.ActiveModel=="local-model",
+    "legacy AI settings select Chat Completions");
+settings.AiProvider=AiProvider.Gemini;
+settings.GeminiModel="models/gemini-flash-latest";
+settings.SetKey("test-gemini-key");
+settings=JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(settings))!;
+Check(settings.AiProvider==AiProvider.Gemini && settings.ActiveModel=="models/gemini-flash-latest" &&
+    settings.GetKey()=="test-gemini-key" && settings.GetKey(AiProvider.ChatCompletions)=="test-key-not-real",
+    "Gemini model and encrypted key persist independently");
+const string geminiSse="""
+data: {"candidates":[{"content":{"parts":[{"thought":true,"text":"summary"}]}}]}
+
+data: {"candidates":[{"content":{"parts":[{"text":"你好"},{"text":" world"}]}}]}
+
+data: {"candidates":[{"finishReason":"STOP"}]}
+
+data: {"usageMetadata":{"totalTokenCount":24}}
+""";
+var geminiHandler=new GeminiHandler(geminiSse);
+phases.Clear();
+await AiClient.Stream(settings,new[]{new ChatMessage("system","Use plain text")}.Concat(history).ToArray(),
+    phases.Add,default,geminiHandler,()=>phases.Add("thinking"));
+Check(geminiHandler.Valid && geminiHandler.Instruction=="Use plain text" &&
+    geminiHandler.Messages.SequenceEqual(new[]{new ChatMessage("user","初问"),new ChatMessage("model","初答"),new ChatMessage("user","请修正")}) &&
+    phases.SequenceEqual(new[]{"thinking","你好"," world"}),"Gemini sends native roles and instructions and streams only visible text");
+foreach(var (data,error) in new[]{
+    ("""{"promptFeedback":{"blockReason":"SAFETY"}}""","ModelContentFilter"),
+    ("""{"candidates":[{"finishReason":"RECITATION"}]}""","ModelContentFilter"),
+    ("""{"candidates":[{"finishReason":"MAX_TOKENS"}]}""","ModelOutputLimit"),
+    ("""{"candidates":[{"content":{"parts":[{"text":"partial"}]}}]}""","ResponseInterrupted")
+}) {
+    try {
+        await AiClient.Stream(settings,testPrompt,"hello",_=>{},default,new GeminiHandler("data: "+data));
+        throw new Exception("Expected Gemini stream failure: "+error);
+    } catch(InvalidDataException ex) {
+        Check(ex.Message==UiText.T(error),$"Gemini stream reports {error}");
+    }
+}
+await Throws(()=>Task.FromResult(GeminiApi.Endpoint(GeminiApi.DefaultEndpoint,"models/../other?key=wrong")),"Gemini rejects invalid model paths");
+await Throws(()=>Task.FromResult(GeminiApi.Endpoint("http://example.com/gemini","")),"Google endpoint rejects remote plaintext");
+await Throws(()=>Task.FromResult(GeminiApi.Endpoint("https://user:password@example.com/gemini","")),"Google endpoint rejects embedded user credentials");
+const string fujitsuBase="https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gemini/";
+var fujitsuSettings=JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(new {
+    AiProvider="FujitsuGemini",FujitsuGeminiModel="gemini-3.5-flash",EncryptedFujitsuGeminiKey=settings.EncryptedGeminiKey,
+    settings.EncryptedKey
+}))!;
+Check(fujitsuSettings.AiProvider==AiProvider.Gemini && fujitsuSettings.ActiveModel=="gemini-3.5-flash" &&
+    fujitsuSettings.GeminiEndpoint==fujitsuBase+"{model}:streamGenerateContentSse" &&
+    fujitsuSettings.GetKey()=="test-gemini-key" && fujitsuSettings.GetKey(AiProvider.ChatCompletions)=="test-key-not-real" &&
+    !JsonSerializer.Serialize(fujitsuSettings).Contains("FujitsuGemini",StringComparison.Ordinal),
+    "legacy Fujitsu settings migrate to the configurable Google protocol");
+foreach(var fujitsuModel in new[]{"gemini-3.5-flash","gemini-3.1-flash-lite","gemini-3.x-flash-lite","gemini-3.x-flash"})
+    Check(GeminiApi.Endpoint(fujitsuSettings.GeminiEndpoint,fujitsuModel).AbsoluteUri==fujitsuBase+fujitsuModel+":streamGenerateContentSse",
+        $"Google endpoint inserts {fujitsuModel}");
+var fujitsuHandler=new GeminiHandler(geminiSse+"\n\ndata: [DONE]\n\n",
+    fujitsuBase+"gemini-3.5-flash:streamGenerateContentSse");
+result.Clear();
+await AiClient.Stream(fujitsuSettings,history,x=>result.Append(x),default,fujitsuHandler);
+Check(fujitsuHandler.Valid && fujitsuHandler.Messages.SequenceEqual(new[]{
+    new ChatMessage("user","初问"),new ChatMessage("model","初答"),new ChatMessage("user","请修正")
+}) && result.ToString()=="你好 world","migrated endpoint streams replies and preserves follow-up history");
+settings.GeminiEndpoint="https://example.com/custom/google?stream=sse";
+settings.GeminiModel="";
+settings.GeminiKeyHeader="Authorization";
+var customGoogleHandler=new GeminiHandler(geminiSse,settings.GeminiEndpoint,header:settings.GeminiKeyHeader);
+await AiClient.Stream(settings,testPrompt,"你好",_=>{},default,customGoogleHandler);
+Check(customGoogleHandler.Valid,"Google uses a complete endpoint without a model field and supports Bearer authentication");
+settings.GeminiKeyHeader="x-company-key";
+var headerHandler=new GeminiHandler(geminiSse,settings.GeminiEndpoint,header:settings.GeminiKeyHeader);
+await AiClient.Stream(settings,testPrompt,"你好",_=>{},default,headerHandler);
+Check(headerHandler.Valid,"Google supports a custom API key header");
+settings.AiProvider=AiProvider.ChatCompletions;
+settings.OpenAiEndpoint="https://example.com/custom/openai?version=2";
+var customChatHandler=new FakeHandler(sse,settings.OpenAiEndpoint);
+await AiClient.Stream(settings,testPrompt,"你好",_=>{},default,customChatHandler);
+Check(customChatHandler.Valid && customChatHandler.ThinkingMode==null,"OpenAI uses the configured endpoint as-is");
 passed+=await SmartChecks.Run();
 passed+=UiChecks.Run();
 Console.WriteLine($"{passed} checks passed.");
@@ -180,6 +257,28 @@ sealed class FakeHandler(string sse,string endpoint):HttpMessageHandler
         Valid=r.RequestUri!.AbsoluteUri==endpoint && r.Headers.Authorization?.Parameter=="test-key-not-real" &&
             Messages.Count>0 && body.RootElement.GetProperty("stream").GetBoolean();
         if(body.RootElement.TryGetProperty("thinking",out var thinking)) ThinkingMode=thinking.GetProperty("type").GetString();
+        return new(HttpStatusCode.OK) { Content=new StringContent(sse,Encoding.UTF8,"text/event-stream") };
+    }
+}
+
+sealed class GeminiHandler(string sse,
+    string endpoint="https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent?alt=sse",
+    string apiKey="test-gemini-key",string header="x-goog-api-key"):HttpMessageHandler
+{
+    public bool Valid;
+    public string? Instruction;
+    public List<ChatMessage> Messages { get; } = new();
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
+    {
+        using var body=JsonDocument.Parse(await request.Content!.ReadAsStringAsync(token));
+        foreach(var content in body.RootElement.GetProperty("contents").EnumerateArray())
+            Messages.Add(new ChatMessage(content.GetProperty("role").GetString()!,content.GetProperty("parts")[0].GetProperty("text").GetString()!));
+        if(body.RootElement.TryGetProperty("systemInstruction",out var instructions))
+            Instruction=instructions.GetProperty("parts")[0].GetProperty("text").GetString();
+        var authorized=header=="Authorization"
+            ? request.Headers.Authorization is { Scheme:"Bearer" } bearer && bearer.Parameter==apiKey
+            : request.Headers.Authorization==null && request.Headers.GetValues(header).Single()==apiKey;
+        Valid=request.Method==HttpMethod.Post && request.RequestUri!.AbsoluteUri==endpoint && authorized;
         return new(HttpStatusCode.OK) { Content=new StringContent(sse,Encoding.UTF8,"text/event-stream") };
     }
 }

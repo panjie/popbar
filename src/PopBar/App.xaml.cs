@@ -89,7 +89,7 @@ public partial class App:Application
             if(Terminal(process)) selection=selection with { Editable=false };
             selectionWindow=window;
             toolbar.Present(selection,point,settings,Configure,prompt=> {
-                if(string.IsNullOrWhiteSpace(settings.Model)) { Configure(); return; }
+                if(!settings.HasAiConfiguration) { Configure(); return; }
                 resultWindow?.Close();
                 var preview=new ResultWindow(settings,prompt,selection);
                 resultWindow=preview;

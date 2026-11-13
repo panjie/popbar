@@ -190,7 +190,7 @@ internal sealed class ToolbarWindow:Window
         }
         foreach(var smart in SmartActions.DetectAll(selection.Text,settings)) AppendSmart(smart);
 
-        var analyzeSelection=settings.AiSmartAnalysis && !string.IsNullOrWhiteSpace(settings.Model) &&
+        var analyzeSelection=settings.AiSmartAnalysis && settings.HasAiConfiguration &&
             !string.IsNullOrWhiteSpace(selection.Text) && selection.Text.Length<=AiSmartAnalysis.MaxInputLength &&
             link==null && !Path.IsPathFullyQualified(selection.Text.Trim().Trim('"')) &&
             !visibleKinds.Contains(SmartActionKind.Command);

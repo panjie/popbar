@@ -51,19 +51,22 @@ Teams/WebView2 的跨进程文本控件通过 UI Automation 父链验证归属�
 
 自定义 Nerd Font 图标当前限定使用 JetBrainsMono 系列（NF、NFM、NFP 及 NL 变体），自动选择优先使用 `JetBrainsMono NF`。字体需安装在本机，安装后重启 PopBar。
 
-在设置中填写：
+在「设置 → AI 服务」中选择 API 协议。
 
-- **API 基础地址**：如 `https://api.deepseek.com/v1`、`https://api.openai.com/v1`，或你使用的 OpenAI 兼容网关地址。不要填写最后的 `/chat/completions`。
-- **模型 ID**：按服务商或本地服务提供的实际名称填写；不预设模型以免与账户权限不符。
-- **DeepSeek Flash 思考模式**：使用官方接口时默认关闭，以缩短正文等待时间。需要时可在 AI 服务设置中开启。
-- **API Key**：已保存的密钥以掩码显示，并通过 Windows DPAPI 加密存储。清空输入框并保存即可删除密钥。仅本机 HTTP 地址允许明文传输，远程服务需要 HTTPS。
-- **提示词按钮**：默认翻译、解释、润色；可以修改、添加和删除，最多显示 12 个。`{{text}}` 原样替换为选中文字；未写占位符时选中文字附加到末尾。
+- **OpenAI 兼容接口**使用 Chat Completions。填写完整流式端点（如 `https://api.deepseek.com/v1/chat/completions`）、模型 ID 和所需的 API Key。使用 DeepSeek 官方 Flash 模型时，可以开启默认关闭的思考模式。
+- **Google 兼容接口**使用 Gemini 的请求格式和 SSE 响应。填写完整端点和服务签发的 API Key。端点可以直接包含模型，也可以用 `{model}` 引用模型 ID 字段。API Key 请求头默认为 `x-goog-api-key`，可按网关要求修改。填写 `Authorization` 时使用 Bearer 认证。
+
+Google 官方接口可用 `https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse`。Fujitsu ChatAI 可用 `https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gemini/{model}:streamGenerateContentSse`，模型 ID 可填 `gemini-3.x-flash`。升级时，已选用的旧版 Fujitsu ChatAI 配置会迁移到 Google 兼容接口。
+
+切换协议时会保留各自的端点、模型 ID 和 API Key。远程服务需要 HTTPS，本机服务可用 HTTP。密钥以掩码显示，通过 Windows DPAPI 加密存储。清空对应的输入框并保存即可删除密钥。
+
+提示词按钮默认提供翻译、解释、润色，可以修改、添加和删除，最多显示 12 个。`{{text}}` 原样替换为选中文字；未写占位符时选中文字附加到末尾。
 
 在提示词列表中拖动条目可以调整顺序，保存后会应用到划词工具条。
 
 点击 AI 提示词按钮或发送追问会发起对应请求。预览支持流式输出、停止、复制、替换原文和连续追问。初始结果完成后显示“追问”按钮；点击后当前窗口显示输入框并停用失焦自动关闭，不会重新生成初始回答。追问会携带当前窗口内的完整对话；Enter 发送，Shift+Enter 换行。不会自动复制或替换，停止/失败会保留部分文字并标记未完成。替换前激活原窗口，重新核对原控件、选区位置、文字和可编辑状态；不能确认时请手动复制。替换成功后结果保留在剪贴板中。
 
-当前版本支持 **Chat Completions 兼容协议**，不是 OpenAI Responses、Claude 原生或 Gemini 原生协议。使用这些服务需要它们的兼容接口或兼容网关。预览以可选择的富文本渲染 Markdown，复制与替换使用渲染后的纯文本。
+预览以可选择的富文本渲染 Markdown，复制与替换使用渲染后的纯文本。
 
 AI 请求整体限时 180 秒，输入上限 64K UTF-16 字符，输出上限 256K 字符，响应传输上限 4M 字符。对话历史仅保存在当前结果窗口内，累计请求内容上限 256K UTF-16 字符；关闭窗口或发起新的 AI 操作即丢弃，不会写入设置文件。追问会把原始选区和当前窗口内的对话再次发送给所配置的服务。不会自动重试，不跟随接口重定向。
 

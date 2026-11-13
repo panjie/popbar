@@ -19,16 +19,28 @@
     <value>AI サービス</value>
   </data>
   <data name="AiServiceDescription" xml:space="preserve">
-    <value>OpenAI 互換の Chat Completions API に対応しています。</value>
+    <value>どちらのプロトコルでもストリーミング用の接続先を設定できます。</value>
+  </data>
+  <data name="AiProvider" xml:space="preserve">
+    <value>API プロトコル</value>
+  </data>
+  <data name="AiProviderChatCompletions" xml:space="preserve">
+    <value>OpenAI 互換 API</value>
+  </data>
+  <data name="AiProviderGemini" xml:space="preserve">
+    <value>Google 互換 API</value>
   </data>
   <data name="AlreadyRunning" xml:space="preserve">
     <value>PopBar はすでに実行中です。通知領域から設定を開いてください。</value>
   </data>
-  <data name="ApiBaseUrl" xml:space="preserve">
-    <value>API ベース URL</value>
+  <data name="ApiEndpoint" xml:space="preserve">
+    <value>API エンドポイント</value>
   </data>
-  <data name="ApiBaseUrlHelp" xml:space="preserve">
-    <value>例 https://api.deepseek.com/v1。末尾の /chat/completions は不要です。リモートサービスには HTTPS が必要です。</value>
+  <data name="OpenAiEndpointHelp" xml:space="preserve">
+    <value>ストリーミング用の完全な URL を入力してください。例 https://api.deepseek.com/v1/chat/completions</value>
+  </data>
+  <data name="GeminiEndpointHelp" xml:space="preserve">
+    <value>SSE エンドポイントの完全な URL を入力してください。{model} はモデル ID に置き換わります。</value>
   </data>
   <data name="ApiKey" xml:space="preserve">
     <value>API キー</value>
@@ -38,6 +50,21 @@
   </data>
   <data name="ApiKeyUnavailable" xml:space="preserve">
     <value>保存済みのキーを読み込めませんでした。キーを入力し直すか、空欄のまま保存して削除してください。</value>
+  </data>
+  <data name="GeminiModelHelp" xml:space="preserve">
+    <value>エンドポイントで {model} を使用する場合に入力してください。</value>
+  </data>
+  <data name="GeminiModelInvalid" xml:space="preserve">
+    <value>有効な Gemini のモデル ID を入力してください。</value>
+  </data>
+  <data name="GeminiKeyHeader" xml:space="preserve">
+    <value>API キーヘッダー</value>
+  </data>
+  <data name="GeminiKeyHeaderHelp" xml:space="preserve">
+    <value>既定値は x-goog-api-key です。Authorization を指定すると Bearer 認証を使用します。</value>
+  </data>
+  <data name="GeminiKeyHeaderInvalid" xml:space="preserve">
+    <value>ヘッダー名は半角英数字とハイフンで入力してください。</value>
   </data>
   <data name="AppStartupFailed" xml:space="preserve">
     <value>PopBar を起動できませんでした</value>
@@ -134,7 +161,7 @@
     <value>設定ファイルが空です。</value>
   </data>
   <data name="EndpointInvalid" xml:space="preserve">
-    <value>API URL には HTTPS を使用してください（ローカルでは HTTP も可）。認証情報、クエリ、# は含めないでください。</value>
+    <value>完全な HTTPS URL を入力してください。認証情報やフラグメントは含めないでください。ローカルでは HTTP も使えます。</value>
   </data>
   <data name="EndpointSettings" xml:space="preserve">
     <value>接続設定</value>

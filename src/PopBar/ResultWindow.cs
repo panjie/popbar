@@ -133,7 +133,7 @@ internal sealed class ResultWindow:ResultPopupWindow
         BuiltInPrompts.LocalizeName(prompt);
         Ui.ApplyTextLanguage(this);
         ApplyResultFont();
-        SetResultTitle(prompt.Name,settings.Model);
+        SetResultTitle(prompt.Name,settings.ActiveModel);
         stop.Content=T("Stop");
         followUpAction.Content=T("FollowUp");
         copy.Content=T("Copy");

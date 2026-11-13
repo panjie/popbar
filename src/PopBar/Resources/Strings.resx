@@ -19,16 +19,28 @@
     <value>AI Service</value>
   </data>
   <data name="AiServiceDescription" xml:space="preserve">
-    <value>Supports OpenAI-compatible Chat Completions APIs.</value>
+    <value>Configure a streaming endpoint for either API protocol.</value>
+  </data>
+  <data name="AiProvider" xml:space="preserve">
+    <value>API protocol</value>
+  </data>
+  <data name="AiProviderChatCompletions" xml:space="preserve">
+    <value>OpenAI-compatible API</value>
+  </data>
+  <data name="AiProviderGemini" xml:space="preserve">
+    <value>Google-compatible API</value>
   </data>
   <data name="AlreadyRunning" xml:space="preserve">
     <value>PopBar is already running. Open Settings from the system tray.</value>
   </data>
-  <data name="ApiBaseUrl" xml:space="preserve">
-    <value>API base URL</value>
+  <data name="ApiEndpoint" xml:space="preserve">
+    <value>API endpoint</value>
   </data>
-  <data name="ApiBaseUrlHelp" xml:space="preserve">
-    <value>Example https://api.deepseek.com/v1. Omit /chat/completions. Remote services require HTTPS.</value>
+  <data name="OpenAiEndpointHelp" xml:space="preserve">
+    <value>Enter the full streaming endpoint URL, such as https://api.deepseek.com/v1/chat/completions.</value>
+  </data>
+  <data name="GeminiEndpointHelp" xml:space="preserve">
+    <value>Enter the full SSE endpoint URL. {model} is replaced with the model ID.</value>
   </data>
   <data name="ApiKey" xml:space="preserve">
     <value>API key</value>
@@ -38,6 +50,21 @@
   </data>
   <data name="ApiKeyUnavailable" xml:space="preserve">
     <value>The saved key could not be read. Enter the key again, or leave this field empty and save to remove it.</value>
+  </data>
+  <data name="GeminiModelHelp" xml:space="preserve">
+    <value>Enter a model ID when the endpoint uses {model}.</value>
+  </data>
+  <data name="GeminiModelInvalid" xml:space="preserve">
+    <value>Enter a valid Gemini model ID.</value>
+  </data>
+  <data name="GeminiKeyHeader" xml:space="preserve">
+    <value>API key header</value>
+  </data>
+  <data name="GeminiKeyHeaderHelp" xml:space="preserve">
+    <value>The default is x-goog-api-key. Enter Authorization for Bearer authentication.</value>
+  </data>
+  <data name="GeminiKeyHeaderInvalid" xml:space="preserve">
+    <value>Enter a header name using only letters, numbers, and hyphens.</value>
   </data>
   <data name="AppStartupFailed" xml:space="preserve">
     <value>Couldn't start PopBar</value>
@@ -134,7 +161,7 @@
     <value>The settings file is empty.</value>
   </data>
   <data name="EndpointInvalid" xml:space="preserve">
-    <value>The API URL must use HTTPS (HTTP is allowed for localhost) and omit credentials, queries, and fragments.</value>
+    <value>Enter a full HTTPS URL without user credentials or a fragment. HTTP is allowed for localhost.</value>
   </data>
   <data name="EndpointSettings" xml:space="preserve">
     <value>Connection settings</value>

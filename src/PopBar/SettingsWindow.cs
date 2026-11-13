@@ -267,33 +267,74 @@ internal sealed class SettingsWindow:Window
         shortcut.Child=Text(T("ManualShortcut"),12,true); general.Children.Add(shortcut);
 
         var endpointSection=Section(ai,T("EndpointSettings")); endpointSection.Margin=new Thickness(0,0,0,4);
-        var url=Field(ai,T("ApiBaseUrl"),settings.BaseUrl,T("ApiBaseUrlHelp"));
-        var model=Field(ai,T("ModelId"),settings.Model,T("ModelIdHelp"));
+        var providerLabel=FieldLabel(ai,T("AiProvider"));
+        var provider=new ComboBox {
+            Name="AiProviderSelector",DisplayMemberPath="Value",SelectedValuePath="Key",
+            ItemsSource=new Dictionary<AiProvider,string> {
+                [AiProvider.ChatCompletions]=T("AiProviderChatCompletions"),
+                [AiProvider.Gemini]=T("AiProviderGemini")
+            },
+            SelectedValue=settings.AiProvider
+        };
+        provider.SetResourceReference(FrameworkElement.StyleProperty,"ComboBoxStyle");
+        System.Windows.Automation.AutomationProperties.SetLabeledBy(provider,providerLabel);
+        ai.Children.Add(provider);
+        var compatible=new StackPanel();
+        var gemini=new StackPanel();
+        ai.Children.Add(compatible);
+        ai.Children.Add(gemini);
+        AiProvider SelectedProvider()=>provider.SelectedValue is AiProvider selected?selected:AiProvider.ChatCompletions;
+        void UpdateProvider()
+        {
+            var selected=SelectedProvider();
+            compatible.Visibility=selected==AiProvider.ChatCompletions?Visibility.Visible:Visibility.Collapsed;
+            gemini.Visibility=selected==AiProvider.Gemini?Visibility.Visible:Visibility.Collapsed;
+        }
+        provider.SelectionChanged+=(_,_)=>UpdateProvider();
+        UpdateProvider();
+
+        var url=Field(compatible,T("ApiEndpoint"),settings.EffectiveOpenAiEndpoint,T("OpenAiEndpointHelp"));
+        url.Name="OpenAiEndpointInput";
+        var model=Field(compatible,T("ModelId"),settings.Model,T("ModelIdHelp"));
         var thinking=new CheckBox {
             Name="DeepSeekFlashThinking",Content=T("DeepSeekThinking"),IsChecked=settings.DeepSeekFlashThinking,
             Margin=new Thickness(0,8,0,0),ToolTip=T("DeepSeekThinkingHelp")
         };
-        ai.Children.Add(thinking);
+        compatible.Children.Add(thinking);
         void UpdateThinkingOption()=>thinking.Visibility=AiClient.IsOfficialDeepSeekFlash(url.Text,model.Text)?Visibility.Visible:Visibility.Collapsed;
         url.TextChanged+=(_,_)=>UpdateThinkingOption();
         model.TextChanged+=(_,_)=>UpdateThinkingOption();
         UpdateThinkingOption();
-        Section(ai,T("Authentication"));
-        var keyLabel=FieldLabel(ai,T("ApiKey"));
-        var secret=new PasswordBox { Name="ApiKeyInput" };
-        secret.SetResourceReference(FrameworkElement.StyleProperty,"InputPasswordBoxStyle");
-        System.Windows.Automation.AutomationProperties.SetLabeledBy(secret,keyLabel);
-        var saveKey=false;
-        var keyHelp=T("ApiKeyHelp");
-        try { secret.Password=settings.GetKey(); }
-        catch(Exception ex) when(ex is FormatException or System.Security.Cryptography.CryptographicException) {
-            saveKey=true;
-            keyHelp=T("ApiKeyUnavailable");
+        var geminiEndpoint=Field(gemini,T("ApiEndpoint"),settings.GeminiEndpoint,T("GeminiEndpointHelp"));
+        geminiEndpoint.Name="GeminiEndpointInput";
+        var geminiModel=Field(gemini,T("ModelId"),settings.GeminiModel,T("GeminiModelHelp"));
+        geminiModel.Name="GeminiModelInput";
+        Action<Settings> KeyField(StackPanel panel,AiProvider service,string inputName)
+        {
+            Section(panel,T("Authentication"));
+            var keyLabel=FieldLabel(panel,T("ApiKey"));
+            var secret=new PasswordBox { Name=inputName };
+            secret.SetResourceReference(FrameworkElement.StyleProperty,"InputPasswordBoxStyle");
+            System.Windows.Automation.AutomationProperties.SetLabeledBy(secret,keyLabel);
+            var changed=false;
+            var unreadable=false;
+            try { secret.Password=settings.GetKey(service); }
+            catch(Exception ex) when(ex is FormatException or System.Security.Cryptography.CryptographicException) {
+                unreadable=true;
+            }
+            secret.PasswordChanged+=(_,_)=>changed=true;
+            panel.Children.Add(secret);
+            var keyHelp=T(unreadable?"ApiKeyUnavailable":"ApiKeyHelp");
+            System.Windows.Automation.AutomationProperties.SetHelpText(secret,keyHelp);
+            var help=Text(keyHelp,12,true); help.Margin=new Thickness(0,6,0,0); panel.Children.Add(help);
+            return next=> {
+                if(changed || (unreadable && service==next.AiProvider)) next.SetKey(service,secret.Password);
+            };
         }
-        secret.PasswordChanged+=(_,_)=>saveKey=true;
-        ai.Children.Add(secret);
-        System.Windows.Automation.AutomationProperties.SetHelpText(secret,keyHelp);
-        var secretHelp=Text(keyHelp,12,true); secretHelp.Margin=new Thickness(0,6,0,0); ai.Children.Add(secretHelp);
+        var saveCompatibleKey=KeyField(compatible,AiProvider.ChatCompletions,"ApiKeyInput");
+        var saveGeminiKey=KeyField(gemini,AiProvider.Gemini,"GeminiApiKeyInput");
+        var geminiKeyHeader=Field(gemini,T("GeminiKeyHeader"),settings.GeminiKeyHeader,T("GeminiKeyHeaderHelp"));
+        geminiKeyHeader.Name="GeminiKeyHeaderInput";
 
         var promptRows=new Grid();
         promptRows.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
@@ -424,13 +465,24 @@ internal sealed class SettingsWindow:Window
         footerButtons.Children.Add(cancel);
         var save=Ui.Button(T("Save"),()=>{
             try {
-                AiClient.Endpoint(url.Text);
+                var selectedProvider=SelectedProvider();
+                if(selectedProvider==AiProvider.ChatCompletions) AiClient.ValidateEndpoint(url.Text);
+                else {
+                    GeminiApi.Endpoint(geminiEndpoint.Text,string.IsNullOrWhiteSpace(geminiModel.Text)?"model":geminiModel.Text);
+                    GeminiApi.ValidateKeyHeader(geminiKeyHeader.Text);
+                }
                 Actions.SearchUri(search.Text,"test");
                 if(drafts.Any(x=>string.IsNullOrWhiteSpace(x.Name)||string.IsNullOrWhiteSpace(x.Prompt))) throw new InvalidOperationException(T("PromptRequired"));
                 if(drafts.Any(x=>PromptIcons.Glyph(x).Length==0)) throw new InvalidOperationException(T("IconRequired"));
                 var selectedTheme=(theme.SelectedItem as ComboBoxItem)?.Tag is AppTheme value?value:AppTheme.System;
                 var selectedOpacity=(toolbarOpacity.SelectedItem as ComboBoxItem)?.Tag is int percent?percent:ToolbarWindow.DefaultIdleOpacityPercent;
-                var next=new Settings { Theme=selectedTheme,ToolbarPosition=toolbarPosition.SelectedIndex==1?ToolbarPlacement.Below:ToolbarPlacement.Above,ToolbarIdleOpacity=selectedOpacity,Enabled=enabled.IsChecked==true,TerminalShift=terminal.IsChecked==true,SearchUrl=search.Text.Trim(),ExcludedApps=excluded.Text,BaseUrl=url.Text.Trim(),Model=model.Text.Trim(),EncryptedKey=settings.EncryptedKey,Prompts=drafts.Select(x=> { var copy=x.Copy(); copy.Name=copy.Name.Trim(); return copy; }).ToList() };
+                var next=new Settings { Theme=selectedTheme,ToolbarPosition=toolbarPosition.SelectedIndex==1?ToolbarPlacement.Below:ToolbarPlacement.Above,ToolbarIdleOpacity=selectedOpacity,Enabled=enabled.IsChecked==true,TerminalShift=terminal.IsChecked==true,SearchUrl=search.Text.Trim(),ExcludedApps=excluded.Text,BaseUrl=settings.BaseUrl,Model=model.Text.Trim(),EncryptedKey=settings.EncryptedKey,Prompts=drafts.Select(x=> { var copy=x.Copy(); copy.Name=copy.Name.Trim(); return copy; }).ToList() };
+                next.AiProvider=selectedProvider;
+                next.OpenAiEndpoint=url.Text.Trim();
+                next.GeminiEndpoint=geminiEndpoint.Text.Trim();
+                next.GeminiKeyHeader=geminiKeyHeader.Text.Trim();
+                next.GeminiModel=geminiModel.Text.Trim();
+                next.EncryptedGeminiKey=settings.EncryptedGeminiKey;
                 next.ToolbarAppPositions=appPositions.ReadPositions();
                 next.Language=language.SelectedValue is UiLanguage preference?preference:UiLanguage.System;
                 next.AutoCloseResultOnDeactivate=autoCloseResult.IsChecked==true;
@@ -444,7 +496,8 @@ internal sealed class SettingsWindow:Window
                     next.AiSmartPrompt=customSmartPrompt;
                 next.CurrencyTarget=currencyTarget.SelectedItem as string??"CNY";
                 next.CurrencySource=currencySource.SelectedItem as string??"CNY";
-                if(saveKey) next.SetKey(secret.Password);
+                saveCompatibleKey(next);
+                saveGeminiKey(next);
                 saved(next);
                 var startupEnabled=launchAtLogin.IsChecked==true;
                 if(launchAtLogin.IsEnabled && startupEnabled!=startupWasEnabled) {

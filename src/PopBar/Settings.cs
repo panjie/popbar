@@ -7,6 +7,8 @@ namespace PopBar;
 
 public enum AppTheme { System, Light, Dark }
 public enum ToolbarPlacement { Above, Below }
+// FujitsuGemini is retained for deserializing older settings.
+public enum AiProvider { ChatCompletions, Gemini, FujitsuGemini }
 public sealed record AppToolbarPosition(
     string[] Executables,
     [property:JsonConverter(typeof(JsonStringEnumConverter))] ToolbarPlacement Position);
@@ -65,16 +67,43 @@ public sealed class Settings:IJsonOnDeserializing,IJsonOnDeserialized
     public int ResultFontSize { get; set; } = ResultTypography.DefaultSize;
     public string ExcludedApps { get; set; } = "KeePass, KeePassXC, 1Password, Bitwarden";
     public string SearchUrl { get; set; } = "https://www.google.com/search?q={text}";
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public AiProvider AiProvider { get; set; } = AiProvider.ChatCompletions;
     public string BaseUrl { get; set; } = "https://api.deepseek.com/v1";
+    [JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
+    public string? OpenAiEndpoint { get; set; }
+    internal string EffectiveOpenAiEndpoint => OpenAiEndpoint??BaseUrl.Trim().TrimEnd('/')+"/chat/completions";
     public string Model { get; set; } = "";
     public bool DeepSeekFlashThinking { get; set; }
     public string EncryptedKey { get; set; } = "";
+    public string GeminiEndpoint { get; set; } = GeminiApi.DefaultEndpoint;
+    public string GeminiKeyHeader { get; set; } = GeminiApi.DefaultKeyHeader;
+    public string GeminiModel { get; set; } = "";
+    public string EncryptedGeminiKey { get; set; } = "";
+    [JsonInclude,JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
+    internal string? FujitsuGeminiModel { get; set; }
+    [JsonInclude,JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
+    internal string? EncryptedFujitsuGeminiKey { get; set; }
+    internal string ActiveModel => AiProvider==AiProvider.Gemini?GeminiModel:Model;
+    internal bool HasAiConfiguration => AiProvider==AiProvider.Gemini
+        ? !string.IsNullOrWhiteSpace(GeminiEndpoint) && (!GeminiApi.UsesModel(GeminiEndpoint) || !string.IsNullOrWhiteSpace(GeminiModel))
+        : !string.IsNullOrWhiteSpace(Model);
     public List<PromptAction> Prompts { get; set; } = BuiltInPrompts.Create();
     public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"PopBar");
     public static string FilePath => Path.Combine(Folder,"settings.json");
     void IJsonOnDeserializing.OnDeserializing() => ToolbarAppPositionsInitialized=false;
     void IJsonOnDeserialized.OnDeserialized()
     {
+        if(AiProvider==AiProvider.FujitsuGemini ||
+           (AiProvider==AiProvider.ChatCompletions && GeminiEndpoint==GeminiApi.DefaultEndpoint &&
+            string.IsNullOrEmpty(GeminiModel) && string.IsNullOrEmpty(EncryptedGeminiKey) &&
+            !string.IsNullOrEmpty(EncryptedFujitsuGeminiKey))) {
+            if(AiProvider==AiProvider.FujitsuGemini) AiProvider=AiProvider.Gemini;
+            GeminiEndpoint="https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gemini/{model}:streamGenerateContentSse";
+            GeminiModel=FujitsuGeminiModel??"gemini-3.x-flash";
+            EncryptedGeminiKey=EncryptedFujitsuGeminiKey??"";
+        }
+        FujitsuGeminiModel=EncryptedFujitsuGeminiKey=null;
         ToolbarAppPositions??=[];
         // Older versions stored only opt-in rules. Add presets once, so later removals persist.
         if(ToolbarAppPositionsInitialized) return;
@@ -94,8 +123,19 @@ public sealed class Settings:IJsonOnDeserializing,IJsonOnDeserialized
         File.WriteAllText(temp,JsonSerializer.Serialize(this,new JsonSerializerOptions { WriteIndented=true }));
         File.Move(temp,FilePath,true);
     }
-    public string GetKey() => string.IsNullOrEmpty(EncryptedKey)?"":Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(EncryptedKey),null,DataProtectionScope.CurrentUser));
-    public void SetKey(string key) => EncryptedKey=key.Length==0?"":Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key),null,DataProtectionScope.CurrentUser));
+    public string GetKey() => GetKey(AiProvider);
+    public void SetKey(string key) => SetKey(AiProvider,key);
+    internal string GetKey(AiProvider provider)
+    {
+        var encrypted=provider==AiProvider.Gemini?EncryptedGeminiKey:EncryptedKey;
+        return string.IsNullOrEmpty(encrypted)?"":Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(encrypted),null,DataProtectionScope.CurrentUser));
+    }
+    internal void SetKey(AiProvider provider,string key)
+    {
+        var encrypted=key.Length==0?"":Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key),null,DataProtectionScope.CurrentUser));
+        if(provider==AiProvider.Gemini) EncryptedGeminiKey=encrypted;
+        else EncryptedKey=encrypted;
+    }
     public bool Excludes(string name) => ExcludedApps.Split(new[]{',',';','\n'},StringSplitOptions.RemoveEmptyEntries).Any(x=>string.Equals(Path.GetFileNameWithoutExtension(x.Trim()),name,StringComparison.OrdinalIgnoreCase));
     internal ToolbarPlacement ToolbarPositionFor(string processName) => ToolbarAppPositions?
         .FirstOrDefault(rule=>rule?.Executables?.Contains(processName+".exe",StringComparer.OrdinalIgnoreCase)==true)

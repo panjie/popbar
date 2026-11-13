@@ -19,16 +19,28 @@
     <value>AI 服务</value>
   </data>
   <data name="AiServiceDescription" xml:space="preserve">
-    <value>支持 OpenAI 兼容的 Chat Completions API。</value>
+    <value>可配置两种协议的流式端点。</value>
+  </data>
+  <data name="AiProvider" xml:space="preserve">
+    <value>API 协议</value>
+  </data>
+  <data name="AiProviderChatCompletions" xml:space="preserve">
+    <value>OpenAI 兼容接口</value>
+  </data>
+  <data name="AiProviderGemini" xml:space="preserve">
+    <value>Google 兼容接口</value>
   </data>
   <data name="AlreadyRunning" xml:space="preserve">
     <value>PopBar 已在运行，请在系统托盘中打开设置。</value>
   </data>
-  <data name="ApiBaseUrl" xml:space="preserve">
-    <value>API 基础地址</value>
+  <data name="ApiEndpoint" xml:space="preserve">
+    <value>API 端点</value>
   </data>
-  <data name="ApiBaseUrlHelp" xml:space="preserve">
-    <value>例如 https://api.deepseek.com/v1，无需添加 /chat/completions。远程服务必须使用 HTTPS。</value>
+  <data name="OpenAiEndpointHelp" xml:space="preserve">
+    <value>填写完整的流式接口地址，例如 https://api.deepseek.com/v1/chat/completions。</value>
+  </data>
+  <data name="GeminiEndpointHelp" xml:space="preserve">
+    <value>填写完整的 SSE 端点地址。{model} 会替换为模型 ID。</value>
   </data>
   <data name="ApiKey" xml:space="preserve">
     <value>API Key</value>
@@ -38,6 +50,21 @@
   </data>
   <data name="ApiKeyUnavailable" xml:space="preserve">
     <value>无法读取已保存的密钥。请重新输入，或留空后保存以删除。</value>
+  </data>
+  <data name="GeminiModelHelp" xml:space="preserve">
+    <value>端点使用 {model} 时填写。</value>
+  </data>
+  <data name="GeminiModelInvalid" xml:space="preserve">
+    <value>请输入有效的 Gemini 模型 ID。</value>
+  </data>
+  <data name="GeminiKeyHeader" xml:space="preserve">
+    <value>API Key 请求头</value>
+  </data>
+  <data name="GeminiKeyHeaderHelp" xml:space="preserve">
+    <value>默认使用 x-goog-api-key。填写 Authorization 时使用 Bearer 认证。</value>
+  </data>
+  <data name="GeminiKeyHeaderInvalid" xml:space="preserve">
+    <value>请求头名称只能包含英文字母、数字和连字符。</value>
   </data>
   <data name="AppStartupFailed" xml:space="preserve">
     <value>PopBar 启动失败</value>
@@ -134,7 +161,7 @@
     <value>设置文件为空。</value>
   </data>
   <data name="EndpointInvalid" xml:space="preserve">
-    <value>API 地址必须为 HTTPS（本机服务可用 HTTP），不含密钥、查询参数或 #。</value>
+    <value>请输入完整的 HTTPS 地址，地址中不要包含用户名、密码或 # 片段。本机服务可用 HTTP。</value>
   </data>
   <data name="EndpointSettings" xml:space="preserve">
     <value>接口配置</value>

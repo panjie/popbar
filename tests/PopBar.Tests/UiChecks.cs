@@ -479,6 +479,41 @@ internal static class UiChecks
         });
         Check(recoveredKey?.GetKey()=="recovered-key","an unreadable key can be replaced");
 
+        Settings? geminiSettings=null;
+        var geminiWindow=new SettingsWindow(keySettings,next=>geminiSettings=next);
+        var geminiWindowClosed=false;
+        geminiWindow.Closed+=(_,_)=>geminiWindowClosed=true;
+        try {
+            FindNamed<Button>(geminiWindow,"AiNavigationButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var provider=FindNamed<ComboBox>(geminiWindow,"AiProviderSelector");
+            var compatibleKey=FindNamed<PasswordBox>(geminiWindow,"ApiKeyInput");
+            var geminiKey=FindNamed<PasswordBox>(geminiWindow,"GeminiApiKeyInput");
+            var geminiModel=FindNamed<TextBox>(geminiWindow,"GeminiModelInput");
+            var chatEndpoint=FindNamed<TextBox>(geminiWindow,"OpenAiEndpointInput");
+            var geminiEndpoint=FindNamed<TextBox>(geminiWindow,"GeminiEndpointInput");
+            var geminiHeader=FindNamed<TextBox>(geminiWindow,"GeminiKeyHeaderInput");
+            provider.SelectedValue=AiProvider.Gemini;
+            Check(provider.Items.Count==2 && ((StackPanel)geminiKey.Parent).Visibility==Visibility.Visible &&
+                ((StackPanel)compatibleKey.Parent).Visibility==Visibility.Collapsed && geminiKey.Password=="",
+                "choosing Gemini shows only its settings and does not reuse the compatible key");
+            geminiKey.Password="gemini-settings-key";
+            geminiModel.Text="gemini-flash-latest";
+            geminiEndpoint.Text="https://example.com/ai/{model}:streamGenerateContentSse";
+            geminiHeader.Text="x-company-key";
+            provider.SelectedValue=AiProvider.ChatCompletions;
+            Check(((StackPanel)compatibleKey.Parent).Visibility==Visibility.Visible && compatibleKey.Password=="test-settings-key",
+                "switching back restores the compatible provider fields");
+            chatEndpoint.Text="https://example.com/custom/openai";
+            provider.SelectedValue=AiProvider.Gemini;
+            Capture(geminiWindow,"settings-zh-CN-gemini");
+            FindNamed<Button>(geminiWindow,"SaveSettingsButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(geminiSettings is { AiProvider:AiProvider.Gemini,ActiveModel:"gemini-flash-latest",
+                GeminiEndpoint:"https://example.com/ai/{model}:streamGenerateContentSse",GeminiKeyHeader:"x-company-key",
+                OpenAiEndpoint:"https://example.com/custom/openai" } && geminiSettings.GetKey()=="gemini-settings-key" &&
+                geminiSettings.EncryptedKey==keySettings.EncryptedKey,
+                "settings save both configurable endpoints and the Google authentication header");
+        } finally { if(!geminiWindowClosed) geminiWindow.Close(); }
+
         var selectionBox=new TextBox { Text="Hello selection" };
         var origin=new Window { Title="PopBar activation test source",Width=320,Height=160,Content=selectionBox };
         var foregroundResult=new Window { Title="PopBar activation test result",Width=320,Height=160,Content=new TextBlock { Text="Result preview" } };
