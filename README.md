@@ -4,6 +4,8 @@
 
 ## 运行
 
+最新版本见 [Releases](http://git.fnst.cn.fujitsu.com/panjie/popbar/-/releases)，当前为 [v0.1.0](http://git.fnst.cn.fujitsu.com/panjie/popbar/-/releases/v0.1.0)。
+
 解压 `PopBar-win-x64.zip`，双击 `PopBar.exe`。精简发布包不包含 .NET 库，适用于 Windows 10/11 x64，需要 **.NET 8 Desktop Runtime（Windows x64）**。启动器会自动检查运行时，缺少时显示安装提示并提供下载入口；安装后重新打开 PopBar 即可。也可从 [微软官方下载页](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)选择 **.NET Desktop Runtime → Windows → x64**，无需安装 SDK；普通 .NET Runtime 或 .NET Framework 不能代替 Desktop Runtime。
 
 首次启动显示设置窗口；关闭设置后仍在系统托盘运行。双击托盘图标打开设置，右键可暂停或退出。重复启动不会创建第二个监听进程。
