@@ -13,6 +13,16 @@ internal static class EdgeSpeech
     const int ChunkLength = 500;
     const int MaxAudioBytes = 2 * 1024 * 1024;
 
+    // Common Japanese forms that are uncommon in modern Chinese prose.
+    const string JapaneseKanji = "駅働込峠辻枠栃畑榊薬広図桜鉄発読売営経";
+
+    // Some Japanese terms share their spelling with traditional Chinese.
+    static readonly string[] JapaneseTerms =
+    [
+        "調達", "暗雲", "日本語", "株式会社", "機械学習", "新幹線",
+        "取引先", "見積書", "納品書", "業務連絡"
+    ];
+
     internal static string MaleVoice(string text)
     {
         bool hasHan = false;
@@ -26,8 +36,11 @@ internal static class EdgeSpeech
             hasHan |= value is >= 0x3400 and <= 0x4dbf or >= 0x4e00 and <= 0x9fff or >= 0xf900 and <= 0xfaff
                 or >= 0x20000 and <= 0x2fa1f or >= 0x30000 and <= 0x323af;
         }
-        // Han-only selections can be ambiguous. Default to Mandarin regardless of the UI language.
-        return hasHan ? "zh-CN-YunxiNeural" : "en-US-GuyNeural";
+        if (!hasHan) return "en-US-GuyNeural";
+        return text.AsSpan().IndexOfAny(JapaneseKanji) >= 0 ||
+            JapaneseTerms.Any(term => text.Contains(term, StringComparison.Ordinal))
+            ? "ja-JP-KeitaNeural"
+            : "zh-CN-YunxiNeural";
     }
 
     internal static IEnumerable<string> Chunks(string text)

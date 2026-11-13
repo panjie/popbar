@@ -34,6 +34,12 @@ UiText.Apply(UiLanguage.Japanese);
 Check(EdgeSpeech.MaleVoice(mixedChineseSpeech)=="zh-CN-YunxiNeural" &&
     EdgeSpeech.MaleVoice("中日・韩合作")=="zh-CN-YunxiNeural", "Japanese UI and shared punctuation do not override the Mandarin voice");
 UiText.Apply(UiLanguage.Chinese);
+Check(EdgeSpeech.MaleVoice("#\n\n# 調達網，暗雲")=="ja-JP-KeitaNeural" &&
+    EdgeSpeech.MaleVoice("中国供应链动态：調達網")=="ja-JP-KeitaNeural" &&
+    EdgeSpeech.MaleVoice("機械学習")=="ja-JP-KeitaNeural" &&
+    EdgeSpeech.MaleVoice("東京駅周辺")=="ja-JP-KeitaNeural", "Japanese kanji forms take priority in Han-only and mixed selections");
+Check(EdgeSpeech.MaleVoice("歡迎使用這個工具")=="zh-CN-YunxiNeural" &&
+    EdgeSpeech.MaleVoice("调达网，暗云")=="zh-CN-YunxiNeural", "traditional and simplified Chinese retain the Mandarin voice");
 var longSpeech=new string('字',499)+"𠀀"+new string('字',550);
 var speechChunks=EdgeSpeech.Chunks(longSpeech).ToArray();
 Check(speechChunks.Length==3 && string.Concat(speechChunks)==longSpeech &&
