@@ -112,7 +112,6 @@
     <value>Copy</value>
   </data>
   <data name="ReadAloud" xml:space="preserve"><value>Read aloud</value></data>
-  <data name="StopReading" xml:space="preserve"><value>Stop reading</value></data>
   <data name="ReadAloudFailed" xml:space="preserve"><value>Could not read the selection aloud. Check your connection and audio output, then try again.</value></data>
   <data name="Assistant" xml:space="preserve">
     <value>AI</value>
@@ -303,9 +302,6 @@ Click Add prompt to get started.</value>
   <data name="PasteIconTooltip" xml:space="preserve">
     <value>Paste one icon or enter a code point (such as U+F121 or \udb81\uddca).</value>
   </data>
-  <data name="PauseSelection" xml:space="preserve">
-    <value>Pause automatic toolbar</value>
-  </data>
   <data name="PolishPrompt" xml:space="preserve">
     <value>Polish</value>
   </data>
@@ -410,9 +406,6 @@ Click Add prompt to get started.</value>
   </data>
   <data name="SettingsLoadFailed" xml:space="preserve">
     <value>Couldn't read the settings file. Defaults will be used and the original file will be kept.</value>
-  </data>
-  <data name="SettingsSaveFailed" xml:space="preserve">
-    <value>Couldn't save settings.</value>
   </data>
   <data name="SettingsSaveFailedTitle" xml:space="preserve">
     <value>Couldn't save settings</value>

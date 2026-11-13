@@ -5,8 +5,6 @@ namespace PopBar;
 internal sealed class ReadAloud(Action<string> notify)
 {
     CancellationTokenSource? current;
-    internal bool IsActive => current != null;
-
     internal void Stop() => current?.Cancel();
 
     internal async Task Start(string text)

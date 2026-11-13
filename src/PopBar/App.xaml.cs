@@ -11,7 +11,7 @@ public partial class App:Application
     InputMonitor? input;
     System.Windows.Forms.NotifyIcon? tray;
     System.Drawing.Icon? trayIcon;
-    System.Windows.Forms.ToolStripItem? traySettings, trayPause, trayStopReading, trayExit;
+    System.Windows.Forms.ToolStripItem? traySettings, trayExit;
     ToolbarWindow toolbar=null!;
     ReadAloud? reading;
     Settings settings=new();
@@ -50,14 +50,9 @@ public partial class App:Application
             using(var icon=new System.Drawing.Icon(iconStream,32,32)) trayIcon=(System.Drawing.Icon)icon.Clone();
             tray=new System.Windows.Forms.NotifyIcon { Icon=trayIcon,Text=T("ToolbarTitle"),Visible=true };
             var menu=new System.Windows.Forms.ContextMenuStrip();
-            var pause=new System.Windows.Forms.ToolStripMenuItem(T("PauseSelection")) { Checked=!settings.Enabled };
-            pause.Click+=(_,_)=> { settings.Enabled=!settings.Enabled; pause.Checked=!settings.Enabled; Dismiss(); try { settings.Save(); } catch { Notify(T("SettingsSaveFailed")); } };
             traySettings=menu.Items.Add(T("TraySettings"),null,(_,_)=>Configure());
-            trayPause=pause; menu.Items.Add(pause);
-            var stopReading=menu.Items.Add(T("StopReading"),null,(_,_)=>speech.Stop());
-            trayStopReading=stopReading;
             trayExit=menu.Items.Add(T("Exit"),null,(_,_)=>Shutdown());
-            menu.Opening+=(_,_)=> { ApplyLanguage(); pause.Checked=!settings.Enabled; stopReading.Enabled=speech.IsActive; };
+            menu.Opening+=(_,_)=>ApplyLanguage();
             tray.ContextMenuStrip=menu; tray.DoubleClick+=(_,_)=>Configure();
             input.Dismiss+=()=>Dispatcher.BeginInvoke(Dismiss);
             input.Selected+=(window,point,shift,manual)=>Dispatcher.BeginInvoke(()=>_=Capture(window,point,shift,manual));
@@ -174,8 +169,6 @@ public partial class App:Application
         LocalizeBuiltInPromptNames();
         if(tray!=null) tray.Text=T("ToolbarTitle");
         if(traySettings!=null) traySettings.Text=T("TraySettings");
-        if(trayPause!=null) trayPause.Text=T("PauseSelection");
-        if(trayStopReading!=null) trayStopReading.Text=T("StopReading");
         if(trayExit!=null) trayExit.Text=T("Exit");
         toolbar?.RefreshLanguage();
         resultWindow?.RefreshLanguage();

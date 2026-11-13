@@ -112,7 +112,6 @@
     <value>コピー</value>
   </data>
   <data name="ReadAloud" xml:space="preserve"><value>読み上げ</value></data>
-  <data name="StopReading" xml:space="preserve"><value>読み上げを停止</value></data>
   <data name="ReadAloudFailed" xml:space="preserve"><value>選択したテキストを読み上げられませんでした。ネットワーク接続と音声出力を確認してから、もう一度お試しください。</value></data>
   <data name="Assistant" xml:space="preserve">
     <value>AI</value>
@@ -303,9 +302,6 @@
   <data name="PasteIconTooltip" xml:space="preserve">
     <value>アイコンを 1 つ貼り付けるか、コードポイント（U+F121、\udb81\uddca など）を入力します。</value>
   </data>
-  <data name="PauseSelection" xml:space="preserve">
-    <value>選択時の自動表示を一時停止</value>
-  </data>
   <data name="PolishPrompt" xml:space="preserve">
     <value>推敲</value>
   </data>
@@ -410,9 +406,6 @@
   </data>
   <data name="SettingsLoadFailed" xml:space="preserve">
     <value>設定ファイルを読み込めませんでした。既定の設定を使用し、元のファイルはそのまま残します。</value>
-  </data>
-  <data name="SettingsSaveFailed" xml:space="preserve">
-    <value>設定を保存できませんでした。</value>
   </data>
   <data name="SettingsSaveFailedTitle" xml:space="preserve">
     <value>保存できませんでした</value>

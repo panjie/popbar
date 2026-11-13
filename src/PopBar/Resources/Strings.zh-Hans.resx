@@ -112,7 +112,6 @@
     <value>复制</value>
   </data>
   <data name="ReadAloud" xml:space="preserve"><value>朗读</value></data>
-  <data name="StopReading" xml:space="preserve"><value>停止朗读</value></data>
   <data name="ReadAloudFailed" xml:space="preserve"><value>无法朗读选中文字。请检查网络连接和音频输出后重试。</value></data>
   <data name="Assistant" xml:space="preserve">
     <value>AI</value>
@@ -303,9 +302,6 @@
   <data name="PasteIconTooltip" xml:space="preserve">
     <value>粘贴单个图标，或输入码点（如 U+F121、\udb81\uddca）</value>
   </data>
-  <data name="PauseSelection" xml:space="preserve">
-    <value>暂停自动划词</value>
-  </data>
   <data name="PolishPrompt" xml:space="preserve">
     <value>润色</value>
   </data>
@@ -410,9 +406,6 @@
   </data>
   <data name="SettingsLoadFailed" xml:space="preserve">
     <value>设置文件无法读取，将使用默认设置。原文件不会自动覆盖。</value>
-  </data>
-  <data name="SettingsSaveFailed" xml:space="preserve">
-    <value>设置保存失败。</value>
   </data>
   <data name="SettingsSaveFailedTitle" xml:space="preserve">
     <value>无法保存</value>
