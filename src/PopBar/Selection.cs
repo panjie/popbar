@@ -39,15 +39,17 @@ internal static class SelectionReader
         if(window==0) return null;
         var chain=new List<AutomationElement>();
         var element=hit;
-        // Embedded WebView2 providers may belong to a different process. Prove ownership
-        // through the UIA tree and native root, never through a process-name allowlist.
+        // Embedded WebView2 providers may belong to a different process. Follow the UIA
+        // tree to the source window and check any native window handles along the way.
         for(var i=0;i<64 && element!=null;i++,element=TreeWalker.RawViewWalker.GetParent(element)) {
             var info=element.Current;
             if(info.IsPassword) return null;
             chain.Add(element);
             var hwnd=info.NativeWindowHandle;
             if(hwnd==window) return chain;
-            if(hwnd!=0 && Native.GetAncestor(hwnd,2)!=window) return null;
+            // Chromium can expose a hidden render HWND parked under a different native
+            // root. Its UIA ancestors must still lead to the exact source window.
+            if(hwnd!=0 && Native.GetAncestor(hwnd,2)!=window && !Native.IsDetachedChromiumRenderer(hwnd,window)) return null;
         }
         return null;
     }

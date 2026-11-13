@@ -20,6 +20,8 @@ internal static class Native
     [DllImport("user32.dll")] internal static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] internal static extern bool SetForegroundWindow(nint hwnd);
     [DllImport("user32.dll")] internal static extern nint GetAncestor(nint hwnd,uint flags);
+    [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassName(nint hwnd,System.Text.StringBuilder name,int capacity);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(nint hwnd);
     [DllImport("user32.dll")] internal static extern nint WindowFromPoint(Point p);
     [DllImport("user32.dll")] internal static extern bool GetCursorPos(out Point p);
     [DllImport("user32.dll")] internal static extern uint GetWindowThreadProcessId(nint hwnd,out uint pid);
@@ -35,6 +37,15 @@ internal static class Native
     [DllImport("user32.dll",SetLastError=true)] static extern uint SendInput(uint count,Input[] inputs,int size);
     internal static bool Down(int key) => GetAsyncKeyState(key)<0;
     internal static bool OwnWindow(nint h) { GetWindowThreadProcessId(h,out var pid); return pid==Environment.ProcessId; }
+    internal static bool IsDetachedChromiumRenderer(nint hwnd,nint window)
+    {
+        if(IsWindowVisible(hwnd)) return false;
+        GetWindowThreadProcessId(hwnd,out var rendererPid);
+        GetWindowThreadProcessId(window,out var windowPid);
+        if(rendererPid==0 || rendererPid!=windowPid) return false;
+        var name=new System.Text.StringBuilder(64);
+        return GetClassName(hwnd,name,name.Capacity)>0 && name.ToString()=="Chrome_RenderWidgetHostHWND";
+    }
     internal static string ProcessName(nint h) { try { GetWindowThreadProcessId(h,out var p); return System.Diagnostics.Process.GetProcessById((int)p).ProcessName; } catch { return ""; } }
     internal static bool ModifiersDown => Down(0x10)||Down(0x11)||Down(0x12)||Down(0x5B)||Down(0x5C);
     internal static void Shortcut(ushort key)
