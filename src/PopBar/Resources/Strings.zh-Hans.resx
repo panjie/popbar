@@ -111,6 +111,9 @@
   <data name="Copy" xml:space="preserve">
     <value>复制</value>
   </data>
+  <data name="ReadAloud" xml:space="preserve"><value>朗读</value></data>
+  <data name="StopReading" xml:space="preserve"><value>停止朗读</value></data>
+  <data name="ReadAloudFailed" xml:space="preserve"><value>无法朗读选中文字。请检查网络连接和音频输出后重试。</value></data>
   <data name="Assistant" xml:space="preserve">
     <value>AI</value>
   </data>

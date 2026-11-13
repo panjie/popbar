@@ -111,6 +111,9 @@
   <data name="Copy" xml:space="preserve">
     <value>Copy</value>
   </data>
+  <data name="ReadAloud" xml:space="preserve"><value>Read aloud</value></data>
+  <data name="StopReading" xml:space="preserve"><value>Stop reading</value></data>
+  <data name="ReadAloudFailed" xml:space="preserve"><value>Could not read the selection aloud. Check your connection and audio output, then try again.</value></data>
   <data name="Assistant" xml:space="preserve">
     <value>AI</value>
   </data>

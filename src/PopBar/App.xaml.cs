@@ -11,8 +11,9 @@ public partial class App:Application
     InputMonitor? input;
     System.Windows.Forms.NotifyIcon? tray;
     System.Drawing.Icon? trayIcon;
-    System.Windows.Forms.ToolStripItem? traySettings, trayPause, trayExit;
+    System.Windows.Forms.ToolStripItem? traySettings, trayPause, trayStopReading, trayExit;
     ToolbarWindow toolbar=null!;
+    ReadAloud? reading;
     Settings settings=new();
     SettingsWindow? settingsWindow;
     ResultWindow? resultWindow;
@@ -42,7 +43,9 @@ public partial class App:Application
             LocalizeBuiltInPromptNames();
             ThemeManager.Apply(settings.Theme);
             Microsoft.Win32.SystemEvents.UserPreferenceChanged+=SystemPreferenceChanged;
-            toolbar=new(); input=new();
+            var speech=new ReadAloud(Notify);
+            reading=speech;
+            toolbar=new(readAloud:text=>_=speech.Start(text)); input=new();
             using(var iconStream=Application.GetResourceStream(new Uri("pack://application:,,,/PopBar;component/Assets/PopBar.ico")).Stream)
             using(var icon=new System.Drawing.Icon(iconStream,32,32)) trayIcon=(System.Drawing.Icon)icon.Clone();
             tray=new System.Windows.Forms.NotifyIcon { Icon=trayIcon,Text=T("ToolbarTitle"),Visible=true };
@@ -51,8 +54,10 @@ public partial class App:Application
             pause.Click+=(_,_)=> { settings.Enabled=!settings.Enabled; pause.Checked=!settings.Enabled; Dismiss(); try { settings.Save(); } catch { Notify(T("SettingsSaveFailed")); } };
             traySettings=menu.Items.Add(T("TraySettings"),null,(_,_)=>Configure());
             trayPause=pause; menu.Items.Add(pause);
+            var stopReading=menu.Items.Add(T("StopReading"),null,(_,_)=>speech.Stop());
+            trayStopReading=stopReading;
             trayExit=menu.Items.Add(T("Exit"),null,(_,_)=>Shutdown());
-            menu.Opening+=(_,_)=> { ApplyLanguage(); pause.Checked=!settings.Enabled; };
+            menu.Opening+=(_,_)=> { ApplyLanguage(); pause.Checked=!settings.Enabled; stopReading.Enabled=speech.IsActive; };
             tray.ContextMenuStrip=menu; tray.DoubleClick+=(_,_)=>Configure();
             input.Dismiss+=()=>Dispatcher.BeginInvoke(Dismiss);
             input.Selected+=(window,point,shift,manual)=>Dispatcher.BeginInvoke(()=>_=Capture(window,point,shift,manual));
@@ -170,6 +175,7 @@ public partial class App:Application
         if(tray!=null) tray.Text=T("ToolbarTitle");
         if(traySettings!=null) traySettings.Text=T("TraySettings");
         if(trayPause!=null) trayPause.Text=T("PauseSelection");
+        if(trayStopReading!=null) trayStopReading.Text=T("StopReading");
         if(trayExit!=null) trayExit.Text=T("Exit");
         toolbar?.RefreshLanguage();
         resultWindow?.RefreshLanguage();
@@ -186,6 +192,7 @@ public partial class App:Application
     protected override void OnExit(ExitEventArgs e)
     {
         Microsoft.Win32.SystemEvents.UserPreferenceChanged-=SystemPreferenceChanged;
+        reading?.Stop();
         timer?.Stop(); input?.Dispose(); resultWindow?.Close(); smartResultWindow?.Close(); toolbar?.Close(); tray?.Dispose(); trayIcon?.Dispose(); instance?.Dispose(); base.OnExit(e);
     }
 }

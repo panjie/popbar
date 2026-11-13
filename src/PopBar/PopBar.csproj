@@ -16,9 +16,11 @@
     <Resource Include="Assets/PopBar.ico" />
     <EmbeddedResource Include="Assets/nerd-font-glyphnames.json" />
     <Content Include="Assets/nerd-font-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/read-aloud-LICENSES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MdXaml" Version="1.27.0" />
+    <PackageReference Include="NAudio.WinMM" Version="2.4.0" />
   </ItemGroup>
 
 </Project>

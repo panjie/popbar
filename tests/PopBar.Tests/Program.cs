@@ -24,6 +24,20 @@ foreach(var name in new[]{"ja","zh-Hans"}) {
         translated.GetObject((string)entry.Key) is string { Length: >0 }),$"complete UI translations for {name}");
 }
 UiText.Apply(UiLanguage.Chinese);
+Check(EdgeSpeechToken.Create(DateTimeOffset.UnixEpoch.AddSeconds(299))==
+    "52BC7A17B50DFEC9-28C4394775C8751CD2F6859C030C06DB1489ACAB3B3A7651831FC26895177ED6", "Edge speech token matches reference within a five-minute window");
+Check(EdgeSpeech.MaleVoice("请阅读这段中文")=="zh-CN-YunxiNeural" &&
+    EdgeSpeech.MaleVoice("日本語を読み上げます")=="ja-JP-KeitaNeural" &&
+    EdgeSpeech.MaleVoice("Please read this sentence.")=="en-US-GuyNeural", "read aloud picks a male voice for the selected language");
+const string mixedChineseSpeech="为 Windows 自用开发的原生划词工具条，交互参考 [panjie/omapop](https://github.com/panjie/omapop)。使用 C#、WPF、Win32 和 UI Automation 实现，不依赖 Electron、Python 或浏览器后台。  ";
+UiText.Apply(UiLanguage.Japanese);
+Check(EdgeSpeech.MaleVoice(mixedChineseSpeech)=="zh-CN-YunxiNeural" &&
+    EdgeSpeech.MaleVoice("中日・韩合作")=="zh-CN-YunxiNeural", "Japanese UI and shared punctuation do not override the Mandarin voice");
+UiText.Apply(UiLanguage.Chinese);
+var longSpeech=new string('字',499)+"𠀀"+new string('字',550);
+var speechChunks=EdgeSpeech.Chunks(longSpeech).ToArray();
+Check(speechChunks.Length==3 && string.Concat(speechChunks)==longSpeech &&
+    speechChunks.All(chunk=>!char.IsHighSurrogate(chunk[^1]) && !char.IsLowSurrogate(chunk[0])), "read aloud splits long selections without breaking supplementary characters");
 Check(Actions.SearchUri("https://example.com/?q={text}","中文 &x=#").Query=="?q=%E4%B8%AD%E6%96%87%20%26x%3D%23","search query encoding");
 Check(Actions.Link("example.com/a?q=中文")?.Host=="example.com","bare domain");
 Check(Actions.Link("javascript:alert(1)")==null && Actions.Link("file:///C:/test.exe")==null,"unsafe schemes rejected");

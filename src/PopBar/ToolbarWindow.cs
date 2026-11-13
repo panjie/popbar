@@ -14,6 +14,7 @@ internal sealed class ToolbarWindow:Window
     readonly MatrixTransform glowPosition=new();
     readonly WrapPanel buttons=new();
     readonly Func<Settings,string,IReadOnlySet<SmartActionKind>,CancellationToken,Task<IReadOnlyList<SmartAction>>> analyze;
+    readonly Action<string>? readAloud;
     CancellationTokenSource? analysis;
     double idleOpacity=DefaultIdleOpacity;
     internal double IdleOpacity => idleOpacity;
@@ -26,9 +27,11 @@ internal sealed class ToolbarWindow:Window
             if(msg==0x21) { handled=true; return 3; } return 0;
         });
     }
-    internal ToolbarWindow(Func<Settings,string,IReadOnlySet<SmartActionKind>,CancellationToken,Task<IReadOnlyList<SmartAction>>>? analyze=null)
+    internal ToolbarWindow(Func<Settings,string,IReadOnlySet<SmartActionKind>,CancellationToken,Task<IReadOnlyList<SmartAction>>>? analyze=null,
+        Action<string>? readAloud=null)
     {
         this.analyze=analyze??((settings,text,missing,token)=>AiSmartAnalysis.Analyze(settings,text,missing,token));
+        this.readAloud=readAloud;
         RefreshLanguage(); WindowStyle=WindowStyle.None; ResizeMode=ResizeMode.NoResize;
         ShowInTaskbar=false; ShowActivated=false; Topmost=true; SizeToContent=SizeToContent.WidthAndHeight;
         AllowsTransparency=true; Background=Brushes.Transparent; Ui.Style(this); Background=Brushes.Transparent;
@@ -157,6 +160,7 @@ internal sealed class ToolbarWindow:Window
             });
         }
         Separator();
+        if(readAloud!=null) Add("\uE767",T("ReadAloud"),()=>readAloud(selection.Text));
         var link=Actions.Link(selection.Text);
         if(link!=null) Add("\uE8A7",T("OpenLink"),()=>Actions.Open(link));
         else if(selection.Text.Length<=4000) Add("\uE721",T("Search"),()=>Actions.Open(Actions.SearchUri(settings.SearchUrl,selection.Text)));

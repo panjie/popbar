@@ -111,6 +111,9 @@
   <data name="Copy" xml:space="preserve">
     <value>コピー</value>
   </data>
+  <data name="ReadAloud" xml:space="preserve"><value>読み上げ</value></data>
+  <data name="StopReading" xml:space="preserve"><value>読み上げを停止</value></data>
+  <data name="ReadAloudFailed" xml:space="preserve"><value>選択したテキストを読み上げられませんでした。ネットワーク接続と音声出力を確認してから、もう一度お試しください。</value></data>
   <data name="Assistant" xml:space="preserve">
     <value>AI</value>
   </data>

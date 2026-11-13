@@ -178,7 +178,8 @@ internal static class UiChecks
             System.Windows.Threading.Dispatcher.PushFrame(frame);
         }
         var toolbarCursor=System.Windows.Forms.Cursor.Position;
-        var toolbar=new ToolbarWindow();
+        string? spokenSelection=null;
+        var toolbar=new ToolbarWindow(readAloud:text=>spokenSelection=text);
         try {
             System.Windows.Forms.Cursor.Position=new System.Drawing.Point(0,0);
             toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings(),()=>{},_=>{},_=>{});
@@ -197,15 +198,19 @@ internal static class UiChecks
             }
             var panel=Descendants<WrapPanel>(toolbar).Single();
             var buttons=panel.Children.OfType<Button>().ToList();
-            var names=new[] { "复制","搜索","翻译","解释","润色","设置" };
+            var names=new[] { "复制","朗读","搜索","翻译","解释","润色","设置" };
             Check(buttons.Count==names.Length && buttons.All(button=>button.Content is TextBlock or Viewbox),"toolbar uses icon-only buttons");
-            Check(buttons.Skip(2).Take(3).Select(button=>((TextBlock)((Viewbox)button.Content).Child).Text).SequenceEqual(new[]{"🌐","💡","✍️"}),"toolbar renders preset emoji icons");
+            Check(buttons.Skip(3).Take(3).Select(button=>((TextBlock)((Viewbox)button.Content).Child).Text).SequenceEqual(new[]{"🌐","💡","✍️"}),"toolbar renders preset emoji icons");
             Check(buttons.Select(button=>button.ToolTip as string).SequenceEqual(names) && buttons.Select(AutomationProperties.GetName).SequenceEqual(names),"toolbar button names and order");
             Check(buttons.All(button=>!button.Focusable) && !toolbar.ShowActivated,"toolbar does not take focus");
             Check(panel.Children.OfType<Border>().Any(border=>border.Width==1),"toolbar visual group separators");
             Check(!panel.Children.OfType<Border>().Any(border=>border.Name=="SmartActionsDivider"),"ordinary text has no smart group");
             Check(!buttons.Any(button=>new[]{"剪切","粘贴","替换原文"}.Contains(button.ToolTip as string)),"read-only selection hides edit actions");
             Capture(toolbar,"toolbar");
+            Check(spokenSelection==null,"showing the toolbar does not start speech");
+            buttons.Single(button=>AutomationProperties.GetName(button)=="朗读").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(spokenSelection=="hello" && !toolbar.IsVisible,"read aloud sends the captured selection and dismisses the toolbar");
+            toolbar.Present(new Selection(0,"hello",false,null,null),new Native.Point { X=100,Y=100 },new Settings(),()=>{},_=>{},_=>{});
             toolbarSurface.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0) { RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent });
             PumpFor(250);
             Check(Math.Abs(toolbarSurface.Opacity-1)<0.001,"toolbar hover becomes opaque");
